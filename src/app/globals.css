@@ -1,0 +1,176 @@
+@import "tailwindcss";
+
+/* =========================================================
+   DESIGN TOKENS – defined once, used everywhere
+   ========================================================= */
+@theme {
+  /* --- Fonts --- */
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* --- Brand / Page Background--- */
+  --color-page-bg: #ddd6f3;
+
+  /* --- Lavender scale --- */
+  --color-lavender-light: #e8e3f5;
+  --color-lavender: #c9bfed;
+  --color-lavender-dark: #a897d6;
+
+  /* --- Dark scale (glass cards, panels) --- */
+  --color-dark: #0a0a0f;
+  --color-dark-card: #141419;
+  --color-dark-elevated: #1c1c24;
+
+  /* --- Accent palette --- */
+  --color-accent-pink: #e8b86d;
+  --color-accent-mint: #a3e8c8;
+  --color-accent-blue: #a0c4e8;
+  --color-accent-peach: #f0c8a0;
+  --color-accent-lilac: #c4a0e8;
+
+  /* --- Neutral surfaces --- */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f4f2fb;
+  --color-border: rgba(201, 191, 237, 0.35);
+  --color-border-strong: rgba(201, 191, 237, 0.65);
+
+  /* --- Text --- */
+  --color-text-primary: #1a1625;
+  --color-text-secondary: #5b5470;
+  --color-text-muted: #9b91b5;
+  --color-text-on-dark: #f0ecff;
+
+  /* --- Semantic --- */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* --- Radius --- */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* --- Shadows --- */
+  --shadow-sm: 0 1px 2px rgba(10, 10, 15, 0.05);
+  --shadow: 0 4px 16px rgba(10, 10, 15, 0.08);
+  --shadow-md: 0 8px 32px rgba(10, 10, 15, 0.12);
+  --shadow-lg: 0 16px 48px rgba(10, 10, 15, 0.16);
+  --shadow-glow: 0 0 32px rgba(196, 160, 232, 0.35);
+  --shadow-card: 0 2px 8px rgba(10, 10, 15, 0.06), 0 8px 32px rgba(10, 10, 15, 0.1);
+}
+
+/* --- CSS variables (mirroring theme tokens for raw CSS access) --- */
+:root {
+  --bg: var(--color-page-bg);
+  --surface: var(--color-surface);
+  --border: var(--color-border);
+  --text: var(--color-text-primary);
+  --text-muted: var(--color-text-muted);
+}
+
+/* =========================================================
+   BASE STYLES
+   ========================================================= */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply antialiased bg-page-bg text-text-primary font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  ::selection {
+    background-color: var(--color-lavender);
+    color: var(--color-text-primary);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+/* =========================================================
+   UTILITIES
+   ========================================================= */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* Glassmorphism card */
+  .glass {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--color-border);
+  }
+
+  /* Dark glass */
+  .glass-dark {
+    background: rgba(20, 20, 25, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c4a0e8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Gradient border trick */
+  .gradient-border {
+    position: relative;
+    background: var(--color-surface);
+    background-clip: padding-box;
+    border: 1px solid transparent;
+  }
+
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    margin: -1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, var(--color-lavender), var(--color-accent-lilac));
+  }
+}
+
+/* =========================================================
+   KEYFRAME ANIMATIONS
+   ========================================================= */
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-14px); }
+}
+
+@keyframes floatBio {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(-12px); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes navIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
