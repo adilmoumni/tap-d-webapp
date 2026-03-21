@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tap-d.link — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f5f3f0;--white:#fff;--dark:#0a0a0f;--text:#1a1a2e;--text-muted:#8a8a9a;--border:#e8e6e2;--border-light:#f0eeea;
+  --gold:#e8b86d;--gold-dark:#b8860b;--gold-light:#faeeda;--mint:#a3e8c8;--blue:#a0c4e8;--pink:#e8a0bf;--purple:#c4a0e8;
+  --green:#22c55e;--red:#ef4444;
+  --radius:12px;--radius-lg:16px;--font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:center;padding:8px 16px;background:var(--dark);color:#fff;font-size:12px;font-weight:500;gap:12px;flex-shrink:0}
+.topbar a{color:var(--gold);background:rgba(232,184,109,0.15);padding:3px 12px;border-radius:999px;font-size:11px;font-weight:600;text-decoration:none}
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:72px;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;flex-shrink:0}
+.sidebar-logo{width:36px;height:36px;border-radius:10px;background:var(--dark);display:flex;align-items:center;justify-content:center;margin-bottom:24px;cursor:pointer;position:relative}
+.sidebar-logo .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);position:absolute}
+.sidebar-nav{display:flex;flex-direction:column;gap:4px;flex:1}
+.si{width:44px;height:44px;border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;position:relative;color:var(--text-muted);gap:2px}
+.si:hover{background:var(--border-light);color:var(--text)}
+.si.active{background:var(--border-light);color:var(--text)}
+.si.active::before{content:'';position:absolute;left:-2px;width:4px;height:20px;border-radius:0 2px 2px 0;background:var(--dark)}
+.si svg{width:18px;height:18px}
+.si .si-label{font-size:8px;font-weight:500}
+.sidebar-bottom{margin-top:auto}
+.sidebar-avatar{width:32px;height:32px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--dark);cursor:pointer}
+
+/* TABS */
+.tabs-panel{width:190px;background:var(--white);border-right:1px solid var(--border);padding:16px 0;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column}
+.tabs-title{padding:0 16px;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;margin-top:12px}
+.tabs-title:first-child{margin-top:0}
+.tab-toggle{display:flex;margin:0 12px 8px;background:var(--border-light);border-radius:8px;padding:3px}
+.tab-toggle-btn{flex:1;padding:6px 0;text-align:center;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;color:var(--text-muted);transition:all .15s;background:none;border:none;font-family:var(--font)}
+.tab-toggle-btn.active{background:var(--white);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.ti{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;transition:all .15s;border-left:2px solid transparent}
+.ti:hover{color:var(--text);background:var(--border-light)}
+.ti.active{color:var(--text);background:var(--border-light);border-left-color:var(--dark)}
+.ti svg{width:16px;height:16px;opacity:.5;flex-shrink:0}
+.ti.active svg{opacity:.8}
+
+/* EDITOR */
+.editor{flex:1;overflow-y:auto;padding:28px 36px;background:var(--white)}
+.editor-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.editor-header h2{font-size:15px;font-weight:600}
+.field-group{margin-bottom:22px}
+.field-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.field-sub{font-size:11px;color:var(--text-muted);margin-bottom:6px}
+.text-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:var(--font);color:var(--text);outline:none;background:var(--white);transition:border-color .2s}
+.text-input:focus{border-color:var(--gold)}
+.text-input.mono{font-family:var(--mono);font-size:12px}
+textarea.text-input{resize:none;height:72px}
+.option-row{display:flex;gap:8px;margin-top:6px}
+.option-card{flex:1;padding:14px;border:1px solid var(--border);border-radius:var(--radius);text-align:center;cursor:pointer;transition:all .15s;position:relative}
+.option-card:hover{border-color:var(--text-muted)}
+.option-card.active{border-color:var(--dark);background:var(--border-light)}
+.option-card .oi{font-size:18px;margin-bottom:4px;display:block;opacity:.5}
+.option-card.active .oi{opacity:.8}
+.option-card .ol{font-size:11px;font-weight:500;color:var(--text-muted)}
+.option-card.active .ol{color:var(--text)}
+.pro-b{position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--gold-light);color:var(--gold-dark);font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+.toggle-row .t-label{font-size:13px}
+.toggle-row .t-sub{font-size:11px;color:var(--text-muted)}
+.toggle{width:36px;height:20px;border-radius:10px;background:var(--border);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--green)}
+.toggle .knob{width:16px;height:16px;border-radius:50%;background:var(--white);position:absolute;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.toggle.on .knob{transform:translateX(16px)}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px}
+.stat-card{background:var(--border-light);border-radius:var(--radius);padding:14px}
+.stat-card .sl{font-size:10px;color:var(--text-muted);margin-bottom:3px}
+.stat-card .sv{font-size:20px;font-weight:600}
+.stat-card .ss{font-size:10px;color:#059669;margin-top:2px}
+.chart-box{background:var(--border-light);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.chart-box .ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.chart-box .ch span{font-size:13px;font-weight:500}
+.chart-box .ch small{font-size:11px;color:var(--text-muted)}
+.bars{display:flex;align-items:flex-end;gap:3px;height:70px}
+.bars .bar{flex:1;background:var(--gold);border-radius:3px 3px 0 0;min-height:4px;opacity:.65}
+.top-list{margin-top:16px}
+.top-list .tl-title{font-size:12px;font-weight:600;margin-bottom:8px}
+.tl-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:12px}
+.tl-row:last-child{border:none}
+.tl-row .tlv{font-weight:500}
+.color-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:8px}
+.color-swatch{aspect-ratio:1;border-radius:10px;cursor:pointer;border:2px solid transparent;transition:border-color .15s}
+.color-swatch:hover{border-color:var(--text-muted)}
+.color-swatch.active{border-color:var(--dark)}
+.btn-style-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.btn-style{padding:18px 12px;border:1px solid var(--border);border-radius:var(--radius);text-align:center;cursor:pointer;transition:all .15s}
+.btn-style:hover{border-color:var(--text-muted)}
+.btn-style.active{border-color:var(--dark);background:var(--border-light)}
+.btn-style .bs-demo{padding:8px 16px;border-radius:var(--radius);font-size:11px;font-weight:500;display:inline-block;margin-bottom:4px}
+.btn-style .bs-label{font-size:10px;color:var(--text-muted)}
+
+/* ===== LINK CARDS (Linktree style) ===== */
+.link-cards{display:flex;flex-direction:column;gap:12px}
+.link-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:0;transition:box-shadow .2s;position:relative}
+.link-card:hover{box-shadow:0 2px 12px rgba(0,0,0,0.04)}
+.link-card-top{display:flex;align-items:center;padding:16px 16px 8px}
+.link-card-drag{cursor:grab;padding:4px;margin-right:8px;color:var(--text-muted);opacity:.3;font-size:16px;line-height:1;display:flex;flex-direction:column;gap:1px}
+.link-card-drag span{display:block;width:3px;height:3px;background:currentColor;border-radius:50%}
+.link-card-drag-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.link-card-body{flex:1;min-width:0}
+.link-card-title{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;margin-bottom:4px}
+.link-card-title .edit-icon{opacity:.3;cursor:pointer;font-size:12px}
+.link-card-title .edit-icon:hover{opacity:.7}
+.link-card-url{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);font-family:var(--mono)}
+.link-card-url .edit-icon{opacity:.3;cursor:pointer;font-size:11px}
+.link-card-url .edit-icon:hover{opacity:.7}
+.link-card-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0}
+.link-card-actions .share-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--white);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:12px;transition:all .15s}
+.link-card-actions .share-btn:hover{border-color:var(--text-muted);color:var(--text)}
+.link-card-toggle{width:40px;height:22px;border-radius:11px;background:var(--green);position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+.link-card-toggle.off{background:var(--border)}
+.link-card-toggle .knob{width:18px;height:18px;border-radius:50%;background:var(--white);position:absolute;top:2px;left:20px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+.link-card-toggle.off .knob{left:2px}
+.link-card-bottom{display:flex;align-items:center;padding:8px 16px 14px;gap:8px}
+.link-card-icon-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border-light);background:var(--white);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:13px;transition:all .15s}
+.link-card-icon-btn:hover{background:var(--border-light);color:var(--text)}
+.link-card-icon-btn svg{width:15px;height:15px}
+.link-card-clicks{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-muted);margin-left:4px}
+.link-card-clicks svg{width:14px;height:14px;opacity:.5}
+.link-card-delete{margin-left:auto;width:30px;height:30px;border-radius:8px;border:1px solid var(--border-light);background:var(--white);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:13px;transition:all .15s}
+.link-card-delete:hover{background:#fef2f2;color:var(--red);border-color:#fecaca}
+.link-card-delete svg{width:15px;height:15px}
+.link-card-smart-badge{position:absolute;top:12px;left:12px;padding:2px 8px;border-radius:999px;background:var(--gold-light);color:var(--gold-dark);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;display:none}
+.link-card.smart .link-card-smart-badge{display:block}
+
+/* ADD LINK BUTTON */
+.add-link-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border:2px dashed var(--border);border-radius:var(--radius-lg);cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted);transition:all .2s;background:var(--white)}
+.add-link-btn:hover{border-color:var(--gold);color:var(--gold-dark);background:var(--gold-light)}
+
+/* SUGGESTIONS POPUP */
+.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:999;display:none;align-items:center;justify-content:center}
+.popup-overlay.show{display:flex}
+.popup{background:var(--white);border-radius:var(--radius-lg);width:420px;max-height:80vh;overflow-y:auto;padding:24px}
+.popup h3{font-size:15px;font-weight:600;margin-bottom:4px}
+.popup .popup-sub{font-size:12px;color:var(--text-muted);margin-bottom:16px}
+.popup-search{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;outline:none;margin-bottom:16px;font-family:var(--font)}
+.popup-search:focus{border-color:var(--gold)}
+.popup-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.popup-item{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .15s}
+.popup-item:hover{border-color:var(--gold);background:var(--gold-light)}
+.popup-item .pi-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.popup-item .pi-name{font-size:11px;font-weight:500;color:var(--text)}
+.popup-close{display:block;width:100%;padding:10px;margin-top:16px;border:1px solid var(--border);border-radius:999px;background:var(--white);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--text-muted);transition:all .15s}
+.popup-close:hover{background:var(--border-light)}
+.popup-or{text-align:center;padding:12px 0;font-size:11px;color:var(--text-muted)}
+.popup-custom{display:flex;gap:8px}
+.popup-custom input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;outline:none;font-family:var(--font)}
+.popup-custom button{padding:10px 18px;border-radius:999px;border:none;background:var(--dark);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap}
+
+/* PREVIEW */
+.preview-panel{width:360px;background:var(--bg);padding:20px 16px;display:flex;flex-direction:column;align-items:center;overflow-y:auto;flex-shrink:0;border-left:1px solid var(--border);transition:width .3s}
+.preview-panel.hidden{width:0;padding:0;border:none;overflow:hidden}
+.preview-url{display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--white);border:1px solid var(--border);border-radius:999px;font-size:11px;color:var(--text-muted);margin-bottom:16px;width:100%;justify-content:center}
+.preview-url .domain{font-weight:500;color:var(--text)}
+.preview-url .share{margin-left:auto;opacity:.3;cursor:pointer;font-size:14px}
+.phone{width:260px;background:var(--white);border-radius:30px;padding:14px;box-shadow:0 2px 16px rgba(0,0,0,0.05);border:1px solid var(--border)}
+.phone-notch{width:70px;height:5px;background:var(--bg);border-radius:3px;margin:0 auto 14px}
+.ph-avatar{width:56px;height:56px;border-radius:50%;background:var(--bg);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-muted)}
+.ph-name{text-align:center;font-size:14px;font-weight:600;margin-bottom:3px}
+.ph-bio{text-align:center;font-size:10px;color:var(--text-muted);line-height:1.5;margin-bottom:12px;padding:0 6px}
+.ph-socials{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
+.ph-social{width:26px;height:26px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted)}
+.ph-links{display:flex;flex-direction:column;gap:6px}
+.ph-link{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:var(--bg);font-size:11px;font-weight:500}
+.ph-link .pi{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.ph-link .pi.a{background:var(--gold-light)}.ph-link .pi.b{background:#e1f5ee}.ph-link .pi.c{background:#eeedfe}.ph-link .pi.d{background:#fbeaf0}.ph-link .pi.e{background:#e3f2fd}
+.ph-link .ps{margin-left:auto;padding:2px 5px;border-radius:999px;background:var(--gold-light);color:var(--gold-dark);font-size:7px;font-weight:600;text-transform:uppercase}
+.ph-link .pa{margin-left:auto;color:var(--text-muted);font-size:10px}
+.ph-footer{text-align:center;margin-top:16px;font-size:9px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;gap:4px}
+.ph-footer .fd{width:4px;height:4px;border-radius:50%;background:var(--gold)}
+
+.panel{display:none}.panel.active{display:block}
+</style>
+</head>
+<body>
+
+<div class="topbar">Unlock smart routing, QR studio, and custom themes.<a href="#">Upgrade to Pro</a></div>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo"><span class="dot"></span></div>
+  <div class="sidebar-nav">
+    <div class="si active" onclick="goSidebar('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><span class="si-label">Analytics</span></div>
+    <div class="si" onclick="goSidebar('links',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg><span class="si-label">Links</span></div>
+    <div class="si" onclick="goSidebar('bio',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="si-label">Bio</span></div>
+    <div class="si" onclick="goSidebar('settings',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span class="si-label">Settings</span></div>
+  </div>
+  <div class="sidebar-bottom"><div class="sidebar-avatar">E</div></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-panel" id="tabs-panel">
+  <div id="tp-dashboard">
+    <div class="tabs-title">Analytics</div>
+    <div class="ti active" onclick="goTab(this,'dash-overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Overview</div>
+    <div class="ti" onclick="goTab(this,'dash-devices')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>Devices</div>
+    <div class="ti" onclick="goTab(this,'dash-countries')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>Countries</div>
+    <div class="ti" onclick="goTab(this,'dash-referrers')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Referrers</div>
+  </div>
+
+  <div id="tp-links" style="display:none">
+    <div class="tabs-title">Links</div>
+    <div class="ti active" onclick="goTab(this,'links-all')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>All links</div>
+    <div class="ti" onclick="goTab(this,'links-qr')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="1"/></svg>QR codes</div>
+  </div>
+
+  <div id="tp-bio" style="display:none">
+    <div class="tabs-title">Bio page</div>
+    <div class="tab-toggle" id="bio-toggle">
+      <button class="tab-toggle-btn active" onclick="switchBio('content',this)">Content</button>
+      <button class="tab-toggle-btn" onclick="switchBio('design',this)">Design</button>
+    </div>
+    <div id="bio-content-tabs">
+      <div class="ti active" onclick="goTab(this,'bio-links')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>Links</div>
+    </div>
+    <div id="bio-design-tabs" style="display:none">
+      <div class="ti active" onclick="goTab(this,'d-header')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Header</div>
+      <div class="ti" onclick="goTab(this,'d-theme')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Theme</div>
+      <div class="ti" onclick="goTab(this,'d-wallpaper')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>Wallpaper</div>
+      <div class="ti" onclick="goTab(this,'d-text')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>Text</div>
+      <div class="ti" onclick="goTab(this,'d-buttons')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="8" rx="4"/></svg>Buttons</div>
+      <div class="ti" onclick="goTab(this,'d-colors')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 2a4 4 0 014 4c0 2-2 3-4 3s-4-1-4-3a4 4 0 014-4z"/></svg>Colors</div>
+      <div class="ti" onclick="goTab(this,'d-footer')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19h16M4 15h16"/></svg>Footer</div>
+    </div>
+  </div>
+
+  <div id="tp-settings" style="display:none">
+    <div class="tabs-title">Settings</div>
+    <div class="ti active" onclick="goTab(this,'s-account')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Account</div>
+    <div class="ti" onclick="goTab(this,'s-billing')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>Plan & billing</div>
+    <div class="ti" onclick="goTab(this,'s-api')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>API keys</div>
+  </div>
+</div>
+
+<!-- EDITOR -->
+<div class="editor" id="editor">
+
+  <!-- DASHBOARD -->
+  <div class="panel active" id="p-dash-overview"><div class="editor-header"><h2>Analytics overview</h2></div><div class="stats-row"><div class="stat-card"><div class="sl">Total links</div><div class="sv">8</div></div><div class="stat-card"><div class="sl">Clicks this month</div><div class="sv">4,821</div><div class="ss">+12%</div></div><div class="stat-card"><div class="sl">Bio views</div><div class="sv">1,203</div><div class="ss">+8%</div></div><div class="stat-card"><div class="sl">Top device</div><div class="sv">iOS 68%</div></div></div><div class="chart-box"><div class="ch"><span>Clicks (7 days)</span><small>1,247 total</small></div><div class="bars"><div class="bar" style="height:45%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:38%"></div><div class="bar" style="height:80%"></div><div class="bar" style="height:100%"></div><div class="bar" style="height:72%"></div><div class="bar" style="height:55%"></div></div></div><div class="top-list"><div class="tl-title">Top links</div><div class="tl-row"><span>/spotify</span><span class="tlv">2,340</span></div><div class="tl-row"><span>/colorpal</span><span class="tlv">1,102</span></div><div class="tl-row"><span>/course</span><span class="tlv">890</span></div></div></div>
+  <div class="panel" id="p-dash-devices"><div class="editor-header"><h2>Devices</h2></div><div class="stats-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card"><div class="sl">iOS</div><div class="sv">68%</div></div><div class="stat-card"><div class="sl">Android</div><div class="sv">24%</div></div><div class="stat-card"><div class="sl">Desktop</div><div class="sv">8%</div></div></div></div>
+  <div class="panel" id="p-dash-countries"><div class="editor-header"><h2>Countries</h2></div><div class="top-list"><div class="tl-row"><span>United States</span><span class="tlv">1,820</span></div><div class="tl-row"><span>United Kingdom</span><span class="tlv">890</span></div><div class="tl-row"><span>France</span><span class="tlv">640</span></div><div class="tl-row"><span>Germany</span><span class="tlv">412</span></div></div></div>
+  <div class="panel" id="p-dash-referrers"><div class="editor-header"><h2>Referrers</h2></div><div class="top-list"><div class="tl-row"><span>Instagram</span><span class="tlv">2,100</span></div><div class="tl-row"><span>Twitter / X</span><span class="tlv">980</span></div><div class="tl-row"><span>Direct</span><span class="tlv">740</span></div><div class="tl-row"><span>TikTok</span><span class="tlv">520</span></div></div></div>
+
+  <!-- LINKS (with Linktree-style cards) -->
+  <div class="panel" id="p-links-all">
+    <div class="editor-header"><h2>Links</h2></div>
+
+    <!-- ADD LINK BUTTON -->
+    <div class="add-link-btn" onclick="document.getElementById('popup').classList.add('show')" style="margin-bottom:16px">
+      + Add link
+    </div>
+
+    <!-- LINK CARDS -->
+    <div class="link-cards">
+
+      <div class="link-card smart">
+        <div class="link-card-smart-badge">Smart</div>
+        <div class="link-card-top">
+          <div class="link-card-drag"><div class="link-card-drag-grid"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+          <div class="link-card-body">
+            <div class="link-card-title">Spotify playlist <span class="edit-icon">&#9998;</span></div>
+            <div class="link-card-url">tap-d.link/spotify <span class="edit-icon">&#9998;</span></div>
+          </div>
+          <div class="link-card-actions">
+            <div class="share-btn">&#8599;</div>
+            <div class="link-card-toggle" onclick="this.classList.toggle('off')"><div class="knob"></div></div>
+          </div>
+        </div>
+        <div class="link-card-bottom">
+          <div class="link-card-icon-btn" title="QR code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/></svg></div>
+          <div class="link-card-icon-btn" title="Thumbnail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+          <div class="link-card-icon-btn" title="Priority"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+          <div class="link-card-icon-btn" title="Schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <div class="link-card-icon-btn" title="Lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+          <div class="link-card-clicks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>2,340 clicks</div>
+          <div class="link-card-delete" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div>
+        </div>
+      </div>
+
+      <div class="link-card smart">
+        <div class="link-card-smart-badge">Smart</div>
+        <div class="link-card-top">
+          <div class="link-card-drag"><div class="link-card-drag-grid"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+          <div class="link-card-body">
+            <div class="link-card-title">ColorPal app <span class="edit-icon">&#9998;</span></div>
+            <div class="link-card-url">tap-d.link/colorpal <span class="edit-icon">&#9998;</span></div>
+          </div>
+          <div class="link-card-actions"><div class="share-btn">&#8599;</div><div class="link-card-toggle" onclick="this.classList.toggle('off')"><div class="knob"></div></div></div>
+        </div>
+        <div class="link-card-bottom">
+          <div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/></svg></div>
+          <div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+          <div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+          <div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+          <div class="link-card-clicks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>1,102 clicks</div>
+          <div class="link-card-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div>
+        </div>
+      </div>
+
+      <div class="link-card">
+        <div class="link-card-top">
+          <div class="link-card-drag"><div class="link-card-drag-grid"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+          <div class="link-card-body">
+            <div class="link-card-title">Instagram <span class="edit-icon">&#9998;</span></div>
+            <div class="link-card-url">tap-d.link/instagram <span class="edit-icon">&#9998;</span></div>
+          </div>
+          <div class="link-card-actions"><div class="share-btn">&#8599;</div><div class="link-card-toggle" onclick="this.classList.toggle('off')"><div class="knob"></div></div></div>
+        </div>
+        <div class="link-card-bottom">
+          <div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/></svg></div>
+          <div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+          <div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+          <div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+          <div class="link-card-clicks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>0 clicks</div>
+          <div class="link-card-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="panel" id="p-links-qr"><div class="editor-header"><h2>QR codes</h2></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"><div style="padding:14px;background:var(--border-light);border-radius:var(--radius);text-align:center"><div style="width:60px;height:60px;background:var(--bg);border-radius:8px;margin:0 auto 6px"></div><div style="font-size:11px;font-weight:500">/spotify</div><div style="font-size:10px;color:var(--gold-dark);margin-top:4px;cursor:pointer">Download</div></div><div style="padding:14px;background:var(--border-light);border-radius:var(--radius);text-align:center"><div style="width:60px;height:60px;background:var(--bg);border-radius:8px;margin:0 auto 6px"></div><div style="font-size:11px;font-weight:500">/colorpal</div><div style="font-size:10px;color:var(--gold-dark);margin-top:4px;cursor:pointer">Download</div></div><div style="padding:14px;background:var(--border-light);border-radius:var(--radius);text-align:center"><div style="width:60px;height:60px;background:var(--bg);border-radius:8px;margin:0 auto 6px"></div><div style="font-size:11px;font-weight:500">/instagram</div><div style="font-size:10px;color:var(--gold-dark);margin-top:4px;cursor:pointer">Download</div></div></div></div>
+
+  <!-- BIO CONTENT: Links -->
+  <div class="panel" id="p-bio-links">
+    <div class="editor-header"><h2>Bio links</h2></div>
+    <div class="add-link-btn" onclick="document.getElementById('popup').classList.add('show')" style="margin-bottom:16px">+ Add link</div>
+    <div class="link-cards">
+      <div class="link-card smart"><div class="link-card-smart-badge">Smart</div><div class="link-card-top"><div class="link-card-drag"><div class="link-card-drag-grid"><span></span><span></span><span></span><span></span><span></span><span></span></div></div><div class="link-card-body"><div class="link-card-title">Spotify playlist <span class="edit-icon">&#9998;</span></div><div class="link-card-url">tap-d.link/spotify <span class="edit-icon">&#9998;</span></div></div><div class="link-card-actions"><div class="share-btn">&#8599;</div><div class="link-card-toggle" onclick="this.classList.toggle('off')"><div class="knob"></div></div></div></div><div class="link-card-bottom"><div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/></svg></div><div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div><div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div><div class="link-card-clicks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>2,340</div><div class="link-card-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div></div></div>
+      <div class="link-card"><div class="link-card-top"><div class="link-card-drag"><div class="link-card-drag-grid"><span></span><span></span><span></span><span></span><span></span><span></span></div></div><div class="link-card-body"><div class="link-card-title">Design course <span class="edit-icon">&#9998;</span></div><div class="link-card-url">tap-d.link/course <span class="edit-icon">&#9998;</span></div></div><div class="link-card-actions"><div class="share-btn">&#8599;</div><div class="link-card-toggle" onclick="this.classList.toggle('off')"><div class="knob"></div></div></div></div><div class="link-card-bottom"><div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/></svg></div><div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div><div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="link-card-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div><div class="link-card-clicks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>890</div><div class="link-card-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div></div></div>
+    </div>
+  </div>
+
+  <!-- BIO DESIGN panels -->
+  <div class="panel" id="p-d-header"><div class="editor-header"><h2>Header style</h2></div><div class="field-group"><div class="field-label">Profile image</div><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:52px;height:52px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-muted)">E</div><button style="padding:7px 16px;border-radius:999px;border:none;background:var(--dark);color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Upload</button></div></div><div class="field-group"><div class="field-label">Layout</div><div class="option-row"><div class="option-card active"><span class="oi">&#9786;</span><span class="ol">Classic</span></div><div class="option-card"><span class="oi">&#9635;</span><span class="ol">Hero</span><span class="pro-b">P</span></div></div></div><div class="field-group"><div class="field-label">Title</div><input class="text-input" value="@emma.creates"></div><div class="field-group"><div class="field-label">Bio</div><textarea class="text-input">Digital creator & UI designer.</textarea></div></div>
+  <div class="panel" id="p-d-theme"><div class="editor-header"><h2>Theme</h2></div><div class="field-group"><div class="field-label">Choose a theme</div><div class="color-grid" style="grid-template-columns:repeat(4,1fr)"><div class="color-swatch active" style="background:var(--white);border:1px solid var(--border)"></div><div class="color-swatch" style="background:#0a0a0f"></div><div class="color-swatch" style="background:#ddd6f3"></div><div class="color-swatch" style="background:#faeeda"></div><div class="color-swatch" style="background:#e1f5ee"></div><div class="color-swatch" style="background:#fce8f0"></div><div class="color-swatch" style="background:#e8f0fc"></div><div class="color-swatch" style="background:#f0eeea"></div></div></div></div>
+  <div class="panel" id="p-d-wallpaper"><div class="editor-header"><h2>Wallpaper</h2></div><div class="field-group"><div class="field-label">Background</div><div class="option-row"><div class="option-card active"><span class="ol">Flat</span></div><div class="option-card"><span class="ol">Image</span><span class="pro-b">P</span></div><div class="option-card"><span class="ol">Gradient</span><span class="pro-b">P</span></div></div></div></div>
+  <div class="panel" id="p-d-text"><div class="editor-header"><h2>Text</h2></div><div class="field-group"><div class="field-label">Font</div><div class="option-row"><div class="option-card active"><span class="oi" style="font-family:Inter">Aa</span><span class="ol">Inter</span></div><div class="option-card"><span class="oi" style="font-family:Georgia">Aa</span><span class="ol">Serif</span></div><div class="option-card"><span class="oi" style="font-family:monospace">Aa</span><span class="ol">Mono</span></div></div></div><div class="field-group"><div class="field-label">Text color</div><div class="color-grid"><div class="color-swatch active" style="background:#1a1a2e"></div><div class="color-swatch" style="background:#fff;border:1px solid var(--border)"></div><div class="color-swatch" style="background:var(--gold-dark)"></div><div class="color-swatch" style="background:#059669"></div><div class="color-swatch" style="background:#2563eb"></div><div class="color-swatch" style="background:#dc2626"></div></div></div></div>
+  <div class="panel" id="p-d-buttons"><div class="editor-header"><h2>Buttons</h2></div><div class="field-group"><div class="field-label">Shape</div><div class="btn-style-row"><div class="btn-style active"><div class="bs-demo" style="background:var(--border-light);border-radius:8px">Link</div><div class="bs-label">Rounded</div></div><div class="btn-style"><div class="bs-demo" style="background:var(--border-light);border-radius:999px">Link</div><div class="bs-label">Pill</div></div><div class="btn-style"><div class="bs-demo" style="background:var(--border-light);border-radius:0">Link</div><div class="bs-label">Square</div></div></div></div><div class="field-group"><div class="field-label">Fill</div><div class="btn-style-row"><div class="btn-style active"><div class="bs-demo" style="background:var(--border-light);border-radius:8px">Filled</div><div class="bs-label">Filled</div></div><div class="btn-style"><div class="bs-demo" style="background:transparent;border:1px solid var(--border);border-radius:8px">Outline</div><div class="bs-label">Outline</div></div><div class="btn-style"><div class="bs-demo" style="background:transparent;border-radius:8px;box-shadow:2px 2px 0 var(--border)">Shadow</div><div class="bs-label">Shadow</div></div></div></div></div>
+  <div class="panel" id="p-d-colors"><div class="editor-header"><h2>Colors</h2></div><div class="field-group"><div class="field-label">Background</div><div class="color-grid"><div class="color-swatch active" style="background:var(--white);border:1px solid var(--border)"></div><div class="color-swatch" style="background:#f5f3f0"></div><div class="color-swatch" style="background:#ddd6f3"></div><div class="color-swatch" style="background:#faeeda"></div><div class="color-swatch" style="background:#e1f5ee"></div><div class="color-swatch" style="background:#fce8f0"></div></div></div><div class="field-group"><div class="field-label">Button color</div><div class="color-grid"><div class="color-swatch active" style="background:#f0eeea"></div><div class="color-swatch" style="background:#0a0a0f"></div><div class="color-swatch" style="background:var(--gold)"></div><div class="color-swatch" style="background:var(--mint)"></div><div class="color-swatch" style="background:var(--pink)"></div><div class="color-swatch" style="background:var(--blue)"></div></div></div></div>
+  <div class="panel" id="p-d-footer"><div class="editor-header"><h2>Footer</h2></div><div class="field-group"><div class="toggle-row"><div><div class="t-label">Show tap-d.link branding</div><div class="t-sub">Remove on Pro</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div></div><div class="field-group"><div class="toggle-row"><div><div class="t-label">Show "Join" CTA</div><div class="t-sub">Drives signups</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div></div></div>
+
+  <!-- SETTINGS -->
+  <div class="panel" id="p-s-account"><div class="editor-header"><h2>Account</h2></div><div class="field-group"><div class="field-label">Email</div><input class="text-input" value="emma@gmail.com" disabled style="opacity:.6"></div><div class="field-group"><div class="field-label">Username</div><input class="text-input mono" value="@emma"></div><div class="field-group"><div class="field-label">Display name</div><input class="text-input" value="Emma Creates"></div><button style="padding:10px 24px;border-radius:999px;border:none;background:var(--dark);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save</button></div>
+  <div class="panel" id="p-s-billing"><div class="editor-header"><h2>Plan & billing</h2></div><div class="stats-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card"><div class="sl">Plan</div><div class="sv">Free</div></div><div class="stat-card"><div class="sl">Links</div><div class="sv">3 / 10</div></div><div class="stat-card"><div class="sl">Clicks</div><div class="sv">4.8K / 5K</div></div></div><button style="padding:10px 24px;border-radius:999px;border:none;background:var(--gold);color:var(--dark);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);width:100%">Upgrade to Pro — $7/mo</button></div>
+  <div class="panel" id="p-s-api"><div class="editor-header"><h2>API keys</h2></div><div class="field-group"><div class="field-label">API key</div><div style="display:flex;gap:8px"><input class="text-input mono" value="td_live_****...a8f2" disabled style="flex:1;opacity:.6"><button style="padding:8px 14px;border:1px solid var(--border);border-radius:999px;font-size:11px;cursor:pointer;background:var(--white);font-family:var(--font)">Reveal</button></div></div></div>
+</div>
+
+<!-- PREVIEW (only for Bio) -->
+<div class="preview-panel hidden" id="preview">
+  <div class="preview-url"><span class="domain">tap-d.link/@emma</span><span class="share">&#8599;</span></div>
+  <div class="phone">
+    <div class="phone-notch"></div>
+    <div class="phone-content">
+      <div class="ph-avatar">E</div>
+      <div class="ph-name">@emma.creates</div>
+      <div class="ph-bio">Digital creator & UI designer.</div>
+      <div class="ph-socials"><div class="ph-social">&#128247;</div><div class="ph-social">&#127925;</div><div class="ph-social">&#9654;</div><div class="ph-social">&#128038;</div></div>
+      <div class="ph-links">
+        <div class="ph-link"><div class="pi a">&#9835;</div>Spotify playlist<span class="ps">Smart</span></div>
+        <div class="ph-link"><div class="pi c">&#9998;</div>Design course<span class="pa">&#8594;</span></div>
+        <div class="ph-link"><div class="pi b">&#9743;</div>ColorPal app<span class="ps">Smart</span></div>
+      </div>
+      <div class="ph-footer"><span class="fd"></span> tap-d.link</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- SOCIAL SUGGESTIONS POPUP -->
+<div class="popup-overlay" id="popup" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="popup">
+    <h3>Add a link</h3>
+    <div class="popup-sub">Choose a platform or add a custom link</div>
+    <input class="popup-search" placeholder="Search platforms..." id="popup-search" oninput="filterPopup(this.value)">
+    <div class="popup-grid" id="popup-grid">
+      <div class="popup-item" onclick="addLink('Instagram')"><div class="pi-icon" style="background:#fce8f0">&#128247;</div><div class="pi-name">Instagram</div></div>
+      <div class="popup-item" onclick="addLink('TikTok')"><div class="pi-icon" style="background:#eeedfe">&#127925;</div><div class="pi-name">TikTok</div></div>
+      <div class="popup-item" onclick="addLink('YouTube')"><div class="pi-icon" style="background:#fef2f2">&#9654;</div><div class="pi-name">YouTube</div></div>
+      <div class="popup-item" onclick="addLink('Twitter / X')"><div class="pi-icon" style="background:#e8f0fc">&#128038;</div><div class="pi-name">Twitter / X</div></div>
+      <div class="popup-item" onclick="addLink('Spotify')"><div class="pi-icon" style="background:#e1f5ee">&#9835;</div><div class="pi-name">Spotify</div></div>
+      <div class="popup-item" onclick="addLink('Apple Music')"><div class="pi-icon" style="background:#fce8f0">&#9836;</div><div class="pi-name">Apple Music</div></div>
+      <div class="popup-item" onclick="addLink('WhatsApp')"><div class="pi-icon" style="background:#e1f5ee">&#128172;</div><div class="pi-name">WhatsApp</div></div>
+      <div class="popup-item" onclick="addLink('Telegram')"><div class="pi-icon" style="background:#e8f0fc">&#9992;</div><div class="pi-name">Telegram</div></div>
+      <div class="popup-item" onclick="addLink('LinkedIn')"><div class="pi-icon" style="background:#e8f0fc">&#128188;</div><div class="pi-name">LinkedIn</div></div>
+      <div class="popup-item" onclick="addLink('GitHub')"><div class="pi-icon" style="background:var(--border-light)">&#128187;</div><div class="pi-name">GitHub</div></div>
+      <div class="popup-item" onclick="addLink('Podcast')"><div class="pi-icon" style="background:#faeeda">&#127908;</div><div class="pi-name">Podcast</div></div>
+      <div class="popup-item" onclick="addLink('Website')"><div class="pi-icon" style="background:var(--border-light)">&#127760;</div><div class="pi-name">Website</div></div>
+      <div class="popup-item" onclick="addLink('Email')"><div class="pi-icon" style="background:var(--border-light)">&#9993;</div><div class="pi-name">Email</div></div>
+      <div class="popup-item" onclick="addLink('Discord')"><div class="pi-icon" style="background:#eeedfe">&#128172;</div><div class="pi-name">Discord</div></div>
+      <div class="popup-item" onclick="addLink('Snapchat')"><div class="pi-icon" style="background:#faeeda">&#128123;</div><div class="pi-name">Snapchat</div></div>
+      <div class="popup-item" onclick="addLink('Pinterest')"><div class="pi-icon" style="background:#fef2f2">&#128204;</div><div class="pi-name">Pinterest</div></div>
+      <div class="popup-item" onclick="addLink('Twitch')"><div class="pi-icon" style="background:#eeedfe">&#127918;</div><div class="pi-name">Twitch</div></div>
+      <div class="popup-item" onclick="addLink('Shop / Store')"><div class="pi-icon" style="background:#faeeda">&#128722;</div><div class="pi-name">Shop</div></div>
+    </div>
+    <div class="popup-or">or add a custom link</div>
+    <div class="popup-custom">
+      <input placeholder="Link title (e.g. My Blog)">
+      <button onclick="document.getElementById('popup').classList.remove('show')">Add</button>
+    </div>
+    <button class="popup-close" onclick="document.getElementById('popup').classList.remove('show')">Cancel</button>
+  </div>
+</div>
+
+<script>
+function goSidebar(name, el) {
+  document.querySelectorAll('.si').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  ['dashboard','links','bio','settings'].forEach(n => {
+    const tp = document.getElementById('tp-' + n);
+    if (tp) tp.style.display = n === name ? 'block' : 'none';
+  });
+  const firstMap = { dashboard:'dash-overview', links:'links-all', bio:'bio-links', settings:'s-account' };
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const fp = document.getElementById('p-' + firstMap[name]);
+  if (fp) fp.classList.add('active');
+  // Show preview only for bio
+  document.getElementById('preview').classList.toggle('hidden', name !== 'bio');
+  if (name === 'bio') {
+    document.getElementById('bio-content-tabs').style.display = 'block';
+    document.getElementById('bio-design-tabs').style.display = 'none';
+    document.querySelectorAll('#bio-toggle .tab-toggle-btn').forEach((b,i) => b.classList.toggle('active', i === 0));
+  }
+  const tabsEl = document.getElementById('tp-' + name);
+  if (tabsEl) tabsEl.querySelectorAll('.ti').forEach((t,i) => t.classList.toggle('active', i === 0));
+}
+function goTab(el, panelId) {
+  el.parentElement.querySelectorAll('.ti').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('p-' + panelId).classList.add('active');
+}
+function switchBio(mode, el) {
+  document.querySelectorAll('#bio-toggle .tab-toggle-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('bio-content-tabs').style.display = mode === 'content' ? 'block' : 'none';
+  document.getElementById('bio-design-tabs').style.display = mode === 'design' ? 'block' : 'none';
+  const first = mode === 'content' ? 'bio-links' : 'd-header';
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('p-' + first).classList.add('active');
+  const tabs = document.getElementById('bio-' + mode + '-tabs');
+  tabs.querySelectorAll('.ti').forEach((t,i) => t.classList.toggle('active', i === 0));
+}
+function filterPopup(q) {
+  document.querySelectorAll('.popup-item').forEach(item => {
+    const name = item.querySelector('.pi-name').textContent.toLowerCase();
+    item.style.display = name.includes(q.toLowerCase()) ? 'flex' : 'none';
+  });
+}
+function addLink(name) {
+  document.getElementById('popup').classList.remove('show');
+}
+document.querySelectorAll('.color-swatch').forEach(s => s.addEventListener('click', () => { s.parentElement.querySelectorAll('.color-swatch').forEach(c => c.classList.remove('active')); s.classList.add('active'); }));
+document.querySelectorAll('.option-card').forEach(c => c.addEventListener('click', () => { c.parentElement.querySelectorAll('.option-card').forEach(o => o.classList.remove('active')); c.classList.add('active'); }));
+document.querySelectorAll('.btn-style').forEach(b => b.addEventListener('click', () => { b.parentElement.querySelectorAll('.btn-style').forEach(o => o.classList.remove('active')); b.classList.add('active'); }));
+</script>
+</body>
+</html>

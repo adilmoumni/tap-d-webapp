@@ -3,6 +3,18 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+import { QRCode } from "@/components/shared/QRCode";
+import {
+  Apple,
+  Play,
+  Monitor,
+  Palette,
+  Mic,
+  Smartphone,
+  Check,
+  Sparkles
+} from "lucide-react";
 
 /* ------------------------------------------------------------------
    HowItWorks — tab navigation section.
@@ -17,14 +29,23 @@ const tabs = [
     body: "Add your App Store, Spotify, Apple Podcasts, and web URLs. Choose a custom slug. When someone taps the link, we detect their device and send them to the right destination — no extra steps for your audience.",
     visual: (
       <div className="text-center">
-        <div className="font-mono text-sm px-4 py-2 bg-white rounded-full inline-block mb-4 text-text-muted">
-          Fan taps tap-d.link/@emma → Podcast
+        <div className="font-mono text-[0.75rem] px-4 py-2 bg-white rounded-full inline-block mb-4 text-text-muted border border-border/10 shadow-sm uppercase tracking-wider font-bold">
+          tap-d.link/@emma → Podcast
         </div>
-        <div className="text-3xl text-accent-lilac my-3">↓</div>
+        <div className="text-accent-pink my-3 flex justify-center">
+          <motion.div animate={{ y: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
+            <span className="text-2xl">↓</span>
+          </motion.div>
+        </div>
         <div className="flex gap-3 justify-center flex-wrap">
-          {["🍎 Apple Podcasts", "🟢 Spotify", "🖥 Web Player"].map((s) => (
-            <div key={s} className="px-4 py-2.5 rounded-xl bg-white text-sm font-semibold flex items-center gap-1.5">
-              {s}
+          {[
+            { label: "Apple Podcasts", icon: Apple },
+            { label: "Spotify", icon: Play },
+            { label: "Web Player", icon: Monitor },
+          ].map((s) => (
+            <div key={s.label} className="px-4 py-2.5 rounded-xl bg-white text-sm font-bold flex items-center gap-2 shadow-sm border border-border/10">
+              <s.icon size={16} strokeWidth={2.5} className="text-text-primary" />
+              {s.label}
             </div>
           ))}
         </div>
@@ -38,9 +59,18 @@ const tabs = [
     body: "Create a stunning bio page at tap-d.link/@you. Customize colors, add your links, and share one URL everywhere. Every link auto-detects the visitor's device.",
     visual: (
       <div className="text-center">
-        <div className="inline-flex flex-col gap-2 w-48">
-          {["🎨 Design Course", "🎙️ Podcast", "📱 My App"].map((l) => (
-            <div key={l} className="px-3 py-2 bg-white rounded-xl text-sm font-semibold text-text-primary text-left">{l}</div>
+        <div className="inline-flex flex-col gap-2.5 w-56">
+          {[
+            { label: "Design Course", icon: Palette, bg: "bg-[#f8f0fc]" },
+            { label: "Podcast", icon: Mic, bg: "bg-[#fce8f0]" },
+            { label: "My App", icon: Smartphone, bg: "bg-[#e8fcf0]" },
+          ].map((l) => (
+            <div key={l.label} className={cn("px-3.5 py-3 rounded-xl text-sm font-bold text-text-primary text-left flex items-center gap-3 shadow-sm", l.bg)}>
+              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <l.icon size={16} strokeWidth={2.5} />
+              </div>
+              {l.label}
+            </div>
           ))}
         </div>
       </div>
@@ -52,11 +82,11 @@ const tabs = [
     heading: "Know exactly who taps",
     body: "See click counts, device breakdown, countries, and referrers — all in real time. Understand your audience and optimize your links to convert.",
     visual: (
-      <div className="text-center space-y-3">
-        {[["Total Clicks", "24.8K"], ["iOS Share", "58%"], ["Top Country", "🇺🇸 US"]].map(([k, v]) => (
-          <div key={k} className="flex items-center justify-between px-4 py-2.5 bg-white rounded-xl text-sm font-medium">
-            <span className="text-text-muted">{k}</span>
-            <span className="font-bold text-text-primary">{v}</span>
+      <div className="text-center space-y-3 w-64">
+        {[["Total Clicks", "24.8K"], ["iOS Share", "58%"], ["Top Country", "US"]].map(([k, v]) => (
+          <div key={k} className="flex items-center justify-between px-5 py-3 bg-white rounded-xl text-sm font-bold shadow-sm border border-border/10">
+            <span className="text-text-muted text-[0.75rem] uppercase tracking-wider">{k}</span>
+            <span className="text-text-primary">{v}</span>
           </div>
         ))}
       </div>
@@ -68,13 +98,20 @@ const tabs = [
     heading: "Every link has a QR code",
     body: "Auto-generated QR for every link. Custom colors, shapes, and logo embedding. Download PNG, SVG, or PDF for print campaigns or events.",
     visual: (
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-28 h-28 bg-accent-peach rounded-[20px] grid grid-cols-5 gap-0.5 p-4">
-          {[1,1,1,0,1, 1,0,1,1,0, 1,1,0,1,1, 0,1,1,0,1, 1,0,1,1,1].map((f, i) => (
-            <div key={i} className={`rounded-sm ${f ? "bg-dark" : "bg-dark/10"}`} />
-          ))}
+      <div className="flex flex-col items-center gap-5">
+        <div className="relative group p-4 bg-white rounded-[32px] shadow-2xl border border-lavender/20">
+          <QRCode 
+            value="https://tap-d.link/@emma" 
+            size={160} 
+            logo={true} 
+            className="rounded-2xl"
+          />
+          <div className="absolute inset-0 bg-accent-pink/5 rounded-[32px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
-        <div className="text-sm font-medium text-text-muted">tap-d.link/@emma</div>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-dark/5 text-[0.7rem] font-bold uppercase tracking-widest text-text-muted">
+          <Sparkles size={12} className="text-accent-pink fill-accent-pink" />
+          High-Res SVG
+        </div>
       </div>
     ),
   },
@@ -94,62 +131,71 @@ export function HowItWorks() {
           initial={{ opacity: 0, y: 28 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, ease: [0, 0, 0.2, 1] }}
-          className="text-center mb-14"
+          className="text-center mb-16"
         >
-          <h2 className="font-serif text-[clamp(2rem,4vw,3.2rem)] font-medium leading-[1.12] tracking-tight mb-3.5">
+          <h2 className="font-serif text-[clamp(2.2rem,4vw,3.2rem)] font-medium leading-[1.12] tracking-tight mb-4">
             How the smart routing works
           </h2>
-          <p className="text-text-secondary text-[1.05rem] max-w-[520px] mx-auto leading-[1.7]">
+          <p className="text-text-secondary text-[1.1rem] max-w-[540px] mx-auto leading-[1.7]">
             Your audience clicks one link. We figure out the rest — automatically, in under 50 milliseconds.
           </p>
         </motion.div>
 
-        {/* Tab bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.1, ease: [0, 0, 0.2, 1] }}
-          className="flex gap-0 border-b border-[#e8e5f0] mb-12"
-        >
+        {/* Improved Stepper (Tabs) */}
+        <div className="max-w-2xl mx-auto mb-20 p-1.5 bg-surface-muted rounded-full flex gap-1 relative overflow-hidden shadow-inner border border-border/10">
           {tabs.map((t, i) => (
             <button
               key={t.label}
               onClick={() => setActive(i)}
-              className={`flex-1 py-4 text-sm font-medium text-left relative transition-colors duration-300 bg-none border-none font-sans cursor-pointer ${
-                active === i ? "text-text-primary font-semibold" : "text-text-muted hover:text-text-secondary"
-              }`}
+              className={cn(
+                "relative flex-1 py-3 px-6 text-sm font-extrabold transition-all duration-300 rounded-full cursor-pointer z-10",
+                active === i ? "text-white" : "text-text-muted hover:text-text-primary"
+              )}
             >
               {active === i && (
-                <span className="absolute left-0 top-0 w-1.5 h-1.5 rounded-full bg-dark" />
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-dark rounded-full -z-10 shadow-lg"
+                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                />
               )}
-              {t.label}
+              <span className="relative inline-flex items-center gap-2">
+                {t.label}
+              </span>
             </button>
           ))}
-        </motion.div>
+        </div>
 
         {/* Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.15, ease: [0, 0, 0.2, 1] }}
-          key={active}
-          className="grid lg:grid-cols-[1fr_1.2fr] gap-12 items-start"
-        >
+        <div className="grid lg:grid-cols-[1fr_1.1fr] gap-12 items-center">
           {/* Left text */}
-          <div>
-            <span className="inline-block px-3.5 py-1.5 rounded-full bg-lavender-light text-[0.78rem] font-semibold text-text-muted mb-5">
+          <motion.div
+            key={active + "text"}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <span className="inline-block px-4 py-1.5 rounded-full bg-lavender-light text-[0.75rem] font-black uppercase tracking-[0.15em] text-text-muted mb-6">
               {tab.chip}
             </span>
-            <h3 className="font-serif text-[1.8rem] font-medium mb-3.5">{tab.heading}</h3>
-            <p className="text-text-secondary text-[0.95rem] leading-[1.7] mb-6">{tab.body}</p>
-            <Button variant="primary" size="md" dot>Get Started</Button>
-          </div>
+            <h3 className="font-serif text-[2.2rem] font-medium leading-tight mb-4">{tab.heading}</h3>
+            <p className="text-text-secondary text-[1rem] leading-[1.8] mb-8 max-w-[480px]">{tab.body}</p>
+            <Button variant="primary" size="lg" dot className="px-8 font-bold">Get Started Now</Button>
+          </motion.div>
 
           {/* Right visual */}
-          <div className="bg-lavender-light rounded-[20px] p-10 min-h-[320px] flex items-center justify-center">
+          <motion.div
+            key={active + "visual"}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="bg-lavender-light/40 rounded-[40px] p-12 min-h-[400px] flex items-center justify-center border border-white/50 backdrop-blur-sm relative"
+          >
+            {/* Ambient background glow */}
+            <div className="absolute inset-0 bg-white/30 rounded-[40px] blur-3xl -z-10 opacity-50" />
             {tab.visual}
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

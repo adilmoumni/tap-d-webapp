@@ -19,9 +19,14 @@ import type { UserProfile } from "@/types";
 export async function signInWithGoogle(): Promise<User> {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
-  const result = await signInWithPopup(auth, provider);
-  await createUserProfile(result.user);
-  return result.user;
+  try {
+    const result = await signInWithPopup(auth, provider);
+    await createUserProfile(result.user);
+    return result.user;
+  } catch (error: any) {
+    console.error("[tap-d] Google Sign-In Error:", error.code, error.message);
+    throw error;
+  }
 }
 
 /* ---- Sign Out ---- */

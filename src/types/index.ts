@@ -41,6 +41,12 @@ export interface SmartLink {
   updatedAt?: Timestamp | Date;
 }
 
+/* ---- Social Link ---- */
+export interface SocialLink {
+  platform: string;   // e.g. "instagram"
+  url: string;
+}
+
 /* ---- Bio Page ---- */
 export interface BioPage {
   id: string;
@@ -49,6 +55,7 @@ export interface BioPage {
   displayName: string;
   bio?: string;
   avatarUrl?: string;
+  socialLinks?: SocialLink[];
   // Display order of link ids
   linkIds: string[];
   // Theme
@@ -68,6 +75,17 @@ export interface ClickEvent {
   country?: string;
   referrer?: string;
   createdAt: Timestamp | Date;
+}
+
+/* ---- Daily Analytics Aggregate ---- */
+export interface DailyStats {
+  date: string;                   // YYYY-MM-DD
+  clicks: number;
+  iosClicks: number;
+  androidClicks: number;
+  desktopClicks: number;
+  countries: Record<string, number>;   // e.g. { US: 42, GB: 7 }
+  referrers: Record<string, number>;   // e.g. { twitter_com: 5 }
 }
 
 /* ---- Pricing / Plan ---- */

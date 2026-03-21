@@ -2,115 +2,149 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { 
+  Sparkles, 
+  Apple, 
+  Smartphone, 
+  TrendingUp, 
+  Palette, 
+  Mic, 
+  ShoppingBag, 
+  User,
+  Zap
+} from "lucide-react";
+import { QRCode } from "@/components/shared/QRCode";
 
 /* ------------------------------------------------------------------
    FloatingCards – hero floating card elements.
-   Each card has a CSS floatY animation with different delays.
-   Hidden on mobile (< md), partial on tablet.
-   Matches every .fc element from the HTML template exactly.
+   Animations: gentle bobbing (floatY) + entry fade.
 ------------------------------------------------------------------ */
 
-/* Shared float animation props for motion.div wrappers */
-const float = (delay: number, duration = 6) => ({
-  animate: { y: [0, -14, 0] },
-  transition: { repeat: Infinity, duration, delay, ease: "easeInOut" as const },
-});
-
-const floatBio = (delay: number) => ({
-  animate: { y: [0, -12, 0] },
-  transition: { repeat: Infinity, duration: 6, delay, ease: "easeInOut" as const },
+const floatY = (duration = 3, delay = 0) => ({
+  animate: {
+    y: [0, -12, 0],
+    transition: { 
+      duration, 
+      repeat: Infinity, 
+      ease: "easeInOut",
+      delay 
+    } as any,
+  },
 });
 
 export function FloatingCards() {
   return (
-    <div className="relative hidden md:block max-w-[1100px] mx-auto mt-20 h-[360px]">
-
+    <div className="relative w-full max-w-[1100px] mx-auto h-[400px] pointer-events-none select-none">
+      
       {/* Social proof pill — top left, pink */}
-      <motion.div
-        {...float(-5)}
-        className="absolute left-[2%] top-0 w-[170px] h-12 bg-accent-pink rounded-xl flex items-center justify-center gap-2 px-3.5"
+      <motion.div 
+        {...floatY(3.5, 0.2)}
+        className="absolute top-0 left-[2%] bg-accent-pink px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 z-20"
       >
-        <span className="text-[0.78rem] font-semibold text-dark">✨ 12K creators</span>
+        <span className="text-[0.78rem] font-bold text-dark tracking-tight">12K creators</span>
       </motion.div>
 
-      {/* iOS pill */}
-      <motion.div
-        {...float(-2)}
-        className="absolute left-[22%] top-[8%] w-[140px] h-12 bg-white rounded-xl flex items-center gap-2 px-3.5 shadow-md"
+      {/* Apple Music — top left, white */}
+      <motion.div 
+        {...floatY(4, 0.5)}
+        className="absolute top-[20%] left-[18%] bg-white p-2.5 rounded-[14px] shadow-lg border border-border/40 z-10 flex items-center justify-center min-w-[140px]"
       >
-        <div className="w-7 h-7 rounded-[7px] bg-[#f0f0f0] flex items-center justify-center text-[0.85rem]">🍎</div>
-        <span className="text-[0.78rem] font-semibold text-text-primary">App Store</span>
+        <div className="w-8 h-8 rounded-[8px] bg-[#f5f5f7] flex items-center justify-center text-dark mr-3">
+          <Apple size={18} fill="currentColor" />
+        </div>
+        <span className="text-[0.78rem] font-bold text-dark">Apple Music</span>
       </motion.div>
 
       {/* Analytics card — left mid, dark elevated */}
-      <motion.div
-        {...float(0)}
-        className="absolute left-[6%] top-[30%] w-[200px] h-[160px] bg-dark-elevated border border-white/[0.08] rounded-xl p-[18px] flex flex-col justify-between"
+      <motion.div 
+        {...floatY(3.8, 0.8)}
+        className="absolute left-[6%] top-[30%] bg-dark-elevated p-5 rounded-2xl shadow-2xl z-30 min-w-[180px] border border-white/[0.05]"
       >
-        <div>
-          <div className="text-[0.68rem] font-semibold text-text-on-dark/55 uppercase tracking-widest mb-1">Link Taps</div>
-          <div className="font-serif text-[2rem] text-text-on-dark leading-none">24.8K</div>
-          <div className="text-[0.72rem] text-text-on-dark/55 mt-1">Last 30 days</div>
-        </div>
-        <div>
-          <div className="h-1 rounded-full bg-white/[0.06] mt-1.5">
-            <div className="h-full w-[72%] bg-accent-mint rounded-full" />
+        <div className="flex flex-col gap-1">
+          <span className="text-[0.68rem] font-bold text-text-on-dark/50 tracking-widest uppercase mb-2">Live Clicks</span>
+          <span className="font-serif text-3xl text-text-on-dark mb-1">12,408</span>
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 flex-1 bg-white/10 rounded-full overflow-hidden">
+              <motion.div 
+                className="h-full bg-accent-mint"
+                initial={{ width: "0%" }}
+                animate={{ width: "72%" }}
+                transition={{ duration: 1.5, delay: 1 }}
+              />
+            </div>
+            <span className="text-[0.7rem] text-accent-mint font-bold">+12%</span>
           </div>
         </div>
       </motion.div>
 
       {/* CENTER — Bio page mockup (most prominent) */}
-      <motion.div
-        {...floatBio(-1)}
-        className="absolute left-1/2 top-0 w-[240px] -translate-x-1/2 bg-white rounded-[20px] shadow-[0_8px_40px_rgba(0,0,0,0.3)] p-5 z-10"
+      <motion.div 
+        {...floatY(4.5, 0)}
+        className="absolute left-1/2 top-0 -translate-x-1/2 z-0"
       >
-        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-accent-lilac to-accent-pink mx-auto mb-2.5 flex items-center justify-center text-xl">👩‍🎨</div>
-        <div className="text-center font-serif text-[0.88rem] font-medium text-text-primary mb-0.5">Emma Creates</div>
-        <div className="text-center text-[0.68rem] text-text-muted mb-3.5">tap-d.link/@emma</div>
-        {[
-          { icon: "🎨", bg: "#f0e8fc", label: "Design Course", smart: false },
-          { icon: "🎙️", bg: "#fce8f0", label: "Podcast",       smart: true },
-          { icon: "📱", bg: "#e8fcf0", label: "My App",         smart: true },
-          { icon: "🛒", bg: "#e8f0fc", label: "Merch Store",    smart: false },
-        ].map((item) => (
-          <div key={item.label} className="flex items-center gap-2 px-3 py-2 bg-[#f8f6fc] rounded-[10px] mb-1.5 text-[0.72rem] font-semibold text-text-primary">
-            <span className="w-6 h-6 rounded-md flex items-center justify-center text-[0.7rem] flex-shrink-0" style={{ background: item.bg }}>{item.icon}</span>
-            <span className="flex-1">{item.label}</span>
-            {item.smart && (
-              <span className="text-[0.55rem] font-bold uppercase tracking-wider text-[#6b5b95] bg-lavender-light px-1.5 py-0.5 rounded-full">Smart</span>
-            )}
+        <div className="w-[200px] md:w-[240px] bg-white rounded-[32px] p-5 shadow-[0_32px_80px_-20px_rgba(0,0,0,0.3)] border border-border/40">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#c4a0e8] to-[#e8b86d] mx-auto mb-3 flex items-center justify-center ring-4 ring-white shadow-sm">
+            <User size={24} className="text-white" />
           </div>
-        ))}
+          <div className="text-center mb-5">
+            <div className="h-2.5 w-20 bg-dark/10 rounded-full mx-auto mb-1.5" />
+            <div className="h-1.5 w-24 bg-dark/5 rounded-full mx-auto" />
+          </div>
+          
+          <div className="flex flex-col gap-2">
+            {[ 
+              { icon: Palette,    bg: "bg-[#f0e8fc]", smart: false },
+              { icon: Mic,        bg: "bg-[#fce8f0]", smart: true },
+              { icon: Smartphone, bg: "bg-[#e8fcf0]", smart: true },
+              { icon: ShoppingBag, bg: "bg-[#e8f0fc]", smart: false },
+            ].map((link, i) => (
+              <div key={i} className={cn("flex items-center gap-2.5 p-2 rounded-xl", link.bg)}>
+                <div className="w-6 h-6 rounded-lg bg-white shadow-sm flex items-center justify-center text-dark">
+                  <link.icon size={12} strokeWidth={3} />
+                </div>
+                <div className="w-20 h-1.5 bg-dark/10 rounded-full" />
+                {link.smart && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-accent-pink shadow-[0_0_8px_rgba(232,160,191,0.6)]" />}
+              </div>
+            ))}
+          </div>
+        </div>
       </motion.div>
 
       {/* Android pill — top right, mint */}
-      <motion.div
-        {...float(-3.5)}
-        className="absolute right-[16%] top-[5%] w-[150px] h-12 bg-accent-mint rounded-xl flex items-center gap-2 px-3.5 lg:flex hidden"
+      <motion.div 
+        {...floatY(4.2, 1)}
+        className="absolute top-[5%] right-[16%] bg-accent-mint px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 z-20"
       >
-        <span className="text-[0.78rem] font-semibold text-dark">🤖 Google Play</span>
+        <Smartphone size={14} className="text-dark" />
+        <span className="text-[0.78rem] font-bold text-dark tracking-tight">Android App</span>
       </motion.div>
 
       {/* QR card — right, peach */}
-      <motion.div
-        {...float(-4)}
-        className="absolute right-[4%] top-[45%] w-[120px] h-[120px] bg-accent-peach rounded-[20px] flex flex-col items-center justify-center gap-1 lg:flex hidden"
+      <motion.div 
+        {...floatY(3.6, 1.2)}
+        className="absolute right-[4%] top-[45%] bg-accent-peach p-4 rounded-[28px] shadow-2xl z-10 flex flex-col items-center gap-3 border border-dark/5"
       >
-        <div className="grid grid-cols-5 gap-0.5">
-          {[1,1,1,0,1, 1,0,1,1,0, 1,1,0,1,1, 0,1,1,0,1, 1,0,1,1,1].map((f, i) => (
-            <div key={i} className={`w-[9px] h-[9px] rounded-sm ${f ? "bg-dark" : "bg-dark/10"}`} />
-          ))}
+        <div className="bg-white p-2 rounded-2xl shadow-sm">
+          <QRCode 
+            value="https://tap-d.link/@emma" 
+            size={88} 
+            logo={true} 
+            className="rounded-lg shadow-none"
+          />
         </div>
-        <div className="text-[0.65rem] font-semibold text-dark/50 mt-0.5">Scan me</div>
+        <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-dark/40">Scan Me</span>
       </motion.div>
 
       {/* Speed indicator — bottom right, dark */}
-      <motion.div
-        {...float(-2.5)}
-        className="absolute right-[8%] bottom-[10%] w-[130px] h-11 bg-dark-elevated border border-white/[0.08] rounded-xl flex items-center justify-center gap-1.5 text-[0.75rem] font-semibold text-accent-mint"
+      <motion.div 
+        {...floatY(3.4, 1.5)}
+        className="absolute right-[8%] top-[80%] bg-dark-elevated border border-white/[0.08] px-4 py-2.5 rounded-xl shadow-2xl z-20 flex items-center gap-2"
       >
-        ⚡ 12ms redirect
+        <Zap size={14} className="text-accent-mint fill-accent-mint" />
+        <span className="text-[0.72rem] font-bold text-accent-mint uppercase tracking-widest">12ms redirect</span>
       </motion.div>
+
     </div>
   );
 }

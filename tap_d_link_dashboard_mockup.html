@@ -1,0 +1,256 @@
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+.dash{display:flex;min-height:620px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;font-size:13px}
+.side{width:200px;background:#0a0a0f;color:#f0eef5;padding:16px 12px;display:flex;flex-direction:column;flex-shrink:0}
+.side-logo{display:flex;align-items:center;gap:8px;font-weight:500;font-size:14px;padding:4px 8px;margin-bottom:20px}
+.side-logo .dot{width:8px;height:8px;border-radius:50%;background:#e8b86d}
+.side-nav{display:flex;flex-direction:column;gap:2px;flex:1}
+.side-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:400;color:rgba(240,238,245,.55);transition:all .15s}
+.side-item:hover{background:rgba(255,255,255,.06);color:#f0eef5}
+.side-item.active{background:rgba(255,255,255,.08);color:#f0eef5;font-weight:500}
+.side-item .ico{width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:.7}
+.side-user{display:flex;align-items:center;gap:8px;padding:10px 8px;border-top:1px solid rgba(255,255,255,.06);margin-top:auto}
+.side-avatar{width:28px;height:28px;border-radius:50%;background:#e8b86d;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#0a0a0f}
+.side-uname{font-size:12px;color:rgba(240,238,245,.55)}
+.side-uname strong{display:block;color:#f0eef5;font-weight:500}
+.main{flex:1;background:var(--color-background-tertiary);display:flex;flex-direction:column;overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary)}
+.topbar-title{font-size:16px;font-weight:500;color:var(--color-text-primary)}
+.topbar-btn{padding:7px 16px;border-radius:999px;background:#0a0a0f;color:#f0eef5;font-size:12px;font-weight:500;border:none;cursor:pointer;display:flex;align-items:center;gap:6px}
+.topbar-btn .d{width:5px;height:5px;border-radius:50%;background:#e8b86d}
+.content{flex:1;padding:20px;overflow-y:auto}
+.page{display:none}
+.page.active{display:block}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.stat-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 16px}
+.stat-card .label{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px}
+.stat-card .val{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.stat-card .sub{font-size:11px;color:var(--color-text-success);margin-top:2px}
+.chart-placeholder{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px;margin-bottom:16px}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.chart-header span{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.chart-header small{font-size:11px;color:var(--color-text-secondary)}
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:80px}
+.chart-bar{flex:1;background:#e8b86d;border-radius:3px 3px 0 0;min-height:6px;opacity:.7}
+.link-list{display:flex;flex-direction:column;gap:8px}
+.link-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);cursor:pointer;transition:border-color .15s}
+.link-item:hover{border-color:var(--color-border-secondary)}
+.link-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.link-ico.a{background:#faeeda}.link-ico.b{background:#e1f5ee}.link-ico.c{background:#eeedfe}.link-ico.d{background:#fbeaf0}
+.link-info{flex:1;min-width:0}
+.link-info .name{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.link-info .slug{font-size:11px;color:var(--color-text-secondary);font-family:var(--font-mono)}
+.link-badge{padding:2px 8px;border-radius:999px;font-size:10px;font-weight:500}
+.link-badge.smart{background:#faeeda;color:#854f0b}
+.link-badge.regular{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.link-clicks{font-size:13px;font-weight:500;color:var(--color-text-primary);text-align:right;min-width:50px}
+.link-clicks small{display:block;font-size:10px;font-weight:400;color:var(--color-text-secondary)}
+
+.bio-editor{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.bio-panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px}
+.bio-panel-title{font-size:13px;font-weight:500;margin-bottom:12px;color:var(--color-text-primary)}
+.bio-field{margin-bottom:12px}
+.bio-field label{display:block;font-size:11px;color:var(--color-text-secondary);margin-bottom:4px}
+.bio-field input,.bio-field textarea{width:100%;padding:8px 10px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);font-size:12px;background:var(--color-background-primary);color:var(--color-text-primary)}
+.bio-field textarea{height:60px;resize:none}
+.bio-social-row{display:flex;gap:6px;flex-wrap:wrap}
+.bio-social-tag{padding:4px 10px;border-radius:999px;font-size:11px;border:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary);background:var(--color-background-secondary)}
+.bio-preview{background:var(--color-background-secondary);border-radius:16px;padding:20px 14px;text-align:center}
+.bio-preview .av{width:48px;height:48px;border-radius:50%;background:#e8b86d;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#0a0a0f;font-weight:500}
+.bio-preview .nm{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.bio-preview .hn{font-size:11px;color:var(--color-text-secondary);margin-bottom:12px}
+.bio-p-link{padding:9px 12px;border-radius:10px;margin-bottom:6px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px;background:var(--color-background-primary);color:var(--color-text-primary)}
+.bio-p-link .sm{margin-left:auto;font-size:9px;padding:2px 6px;border-radius:999px;background:#faeeda;color:#854f0b;font-weight:500}
+
+.qr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.qr-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px;text-align:center}
+.qr-box{width:80px;height:80px;margin:0 auto 10px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center}
+.qr-box svg{width:48px;height:48px;opacity:.5}
+.qr-card .qr-name{font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:2px}
+.qr-card .qr-slug{font-size:10px;color:var(--color-text-secondary);font-family:var(--font-mono);margin-bottom:8px}
+.qr-card .qr-dl{font-size:11px;color:var(--color-text-info);cursor:pointer}
+
+.settings-section{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px;margin-bottom:12px}
+.settings-section .sec-title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:12px}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.settings-row:last-child{border-bottom:none}
+.settings-row .sr-label{font-size:12px;color:var(--color-text-secondary)}
+.settings-row .sr-val{font-size:12px;font-weight:500;color:var(--color-text-primary)}
+.settings-row .sr-btn{font-size:11px;color:var(--color-text-info);cursor:pointer;background:none;border:none;font-family:inherit}
+</style>
+<div class="dash">
+  <div class="side">
+    <div class="side-logo"><span class="dot"></span>tap-d.link</div>
+    <div class="side-nav">
+      <div class="side-item active" onclick="showPage('home',this)"><span class="ico">&#9632;</span>Dashboard</div>
+      <div class="side-item" onclick="showPage('links',this)"><span class="ico">&#8599;</span>Links</div>
+      <div class="side-item" onclick="showPage('bio',this)"><span class="ico">&#9786;</span>Bio page</div>
+      <div class="side-item" onclick="showPage('qr',this)"><span class="ico">&#9641;</span>QR codes</div>
+      <div class="side-item" onclick="showPage('settings',this)"><span class="ico">&#9881;</span>Settings</div>
+    </div>
+    <div class="side-user">
+      <div class="side-avatar">E</div>
+      <div class="side-uname"><strong>Emma</strong>@emma</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="page-title">Dashboard</span>
+      <button class="topbar-btn"><span class="d"></span>Create smart link</button>
+    </div>
+    <div class="content">
+
+      <div class="page active" id="page-home">
+        <div class="stats-row">
+          <div class="stat-card"><div class="label">Total links</div><div class="val">8</div></div>
+          <div class="stat-card"><div class="label">Clicks this month</div><div class="val">4,821</div><div class="sub">+12% vs last month</div></div>
+          <div class="stat-card"><div class="label">Bio page views</div><div class="val">1,203</div><div class="sub">+8% vs last month</div></div>
+          <div class="stat-card"><div class="label">Plan</div><div class="val">Free</div></div>
+        </div>
+        <div class="chart-placeholder">
+          <div class="chart-header"><span>Clicks (last 7 days)</span><small>Total: 1,247</small></div>
+          <div class="chart-bars">
+            <div class="chart-bar" style="height:45%"></div><div class="chart-bar" style="height:60%"></div><div class="chart-bar" style="height:38%"></div><div class="chart-bar" style="height:80%"></div><div class="chart-bar" style="height:100%"></div><div class="chart-bar" style="height:72%"></div><div class="chart-bar" style="height:55%"></div>
+          </div>
+        </div>
+        <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px">Recent links</div>
+        <div class="link-list">
+          <div class="link-item"><div class="link-ico a">&#9835;</div><div class="link-info"><div class="name">Spotify playlist</div><div class="slug">/spotify</div></div><span class="link-badge smart">Smart</span><div class="link-clicks">2,340<small>clicks</small></div></div>
+          <div class="link-item"><div class="link-ico b">&#9743;</div><div class="link-info"><div class="name">ColorPal app</div><div class="slug">/colorpal</div></div><span class="link-badge smart">Smart</span><div class="link-clicks">1,102<small>clicks</small></div></div>
+          <div class="link-item"><div class="link-ico c">&#9998;</div><div class="link-info"><div class="name">Design course</div><div class="slug">/course</div></div><span class="link-badge regular">Regular</span><div class="link-clicks">890<small>clicks</small></div></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-links">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+          <input placeholder="Search links..." style="flex:1;padding:8px 12px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);font-size:12px">
+          <select style="padding:8px 10px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);font-size:12px"><option>All links</option><option>Smart only</option><option>Regular</option></select>
+        </div>
+        <div class="link-list">
+          <div class="link-item"><div class="link-ico a">&#9835;</div><div class="link-info"><div class="name">Spotify playlist</div><div class="slug">/spotify</div></div><span class="link-badge smart">Smart</span><div class="link-clicks">2,340<small>clicks</small></div></div>
+          <div class="link-item"><div class="link-ico b">&#9743;</div><div class="link-info"><div class="name">ColorPal app</div><div class="slug">/colorpal</div></div><span class="link-badge smart">Smart</span><div class="link-clicks">1,102<small>clicks</small></div></div>
+          <div class="link-item"><div class="link-ico c">&#9998;</div><div class="link-info"><div class="name">Design course</div><div class="slug">/course</div></div><span class="link-badge regular">Regular</span><div class="link-clicks">890<small>clicks</small></div></div>
+          <div class="link-item"><div class="link-ico d">&#9993;</div><div class="link-info"><div class="name">Newsletter</div><div class="slug">/newsletter</div></div><span class="link-badge regular">Regular</span><div class="link-clicks">312<small>clicks</small></div></div>
+          <div class="link-item"><div class="link-ico a">&#9836;</div><div class="link-info"><div class="name">Podcast</div><div class="slug">/podcast</div></div><span class="link-badge smart">Smart</span><div class="link-clicks">177<small>clicks</small></div></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-bio">
+        <div class="bio-editor">
+          <div class="bio-panel">
+            <div class="bio-panel-title">Edit bio page</div>
+            <div class="bio-field"><label>Display name</label><input value="Emma Creates"></div>
+            <div class="bio-field"><label>Username</label><input value="@emma" disabled style="opacity:.6"></div>
+            <div class="bio-field"><label>Bio</label><textarea>Digital creator. UI designer. Sharing design tips and creative tools.</textarea></div>
+            <div class="bio-field">
+              <label>Social links</label>
+              <div class="bio-social-row">
+                <span class="bio-social-tag">Instagram</span>
+                <span class="bio-social-tag">TikTok</span>
+                <span class="bio-social-tag">YouTube</span>
+                <span class="bio-social-tag">Twitter</span>
+                <span class="bio-social-tag" style="color:var(--color-text-info);cursor:pointer">+ Add</span>
+              </div>
+            </div>
+            <div class="bio-field">
+              <label>Links on bio page (drag to reorder)</label>
+              <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--color-background-secondary);border-radius:6px;font-size:11px"><span style="cursor:grab;opacity:.3">=</span>Design course<span style="margin-left:auto;font-size:10px;color:var(--color-text-secondary)">Regular</span></div>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--color-background-secondary);border-radius:6px;font-size:11px"><span style="cursor:grab;opacity:.3">=</span>Podcast<span style="margin-left:auto;font-size:10px;color:#854f0b;background:#faeeda;padding:1px 6px;border-radius:99px">Smart</span></div>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--color-background-secondary);border-radius:6px;font-size:11px"><span style="cursor:grab;opacity:.3">=</span>ColorPal app<span style="margin-left:auto;font-size:10px;color:#854f0b;background:#faeeda;padding:1px 6px;border-radius:99px">Smart</span></div>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--color-background-secondary);border-radius:6px;font-size:11px"><span style="cursor:grab;opacity:.3">=</span>Merch store<span style="margin-left:auto;font-size:10px;color:var(--color-text-secondary)">Regular</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="bio-panel">
+            <div class="bio-panel-title">Live preview</div>
+            <div class="bio-preview">
+              <div class="av">E</div>
+              <div class="nm">Emma Creates</div>
+              <div class="hn">@emma  ·  Designer & creator</div>
+              <div class="bio-p-link"><span style="font-size:14px">&#9998;</span>Design course<span style="margin-left:auto;font-size:11px;color:var(--color-text-secondary)">&#8594;</span></div>
+              <div class="bio-p-link"><span style="font-size:14px">&#9835;</span>Podcast<span class="sm">Smart</span><span style="margin-left:4px;font-size:11px;color:var(--color-text-secondary)">&#8594;</span></div>
+              <div class="bio-p-link"><span style="font-size:14px">&#9743;</span>ColorPal app<span class="sm">Smart</span><span style="margin-left:4px;font-size:11px;color:var(--color-text-secondary)">&#8594;</span></div>
+              <div class="bio-p-link"><span style="font-size:14px">&#9749;</span>Merch store<span style="margin-left:auto;font-size:11px;color:var(--color-text-secondary)">&#8594;</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-qr">
+        <div class="qr-grid">
+          <div class="qr-card">
+            <div class="qr-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="1"/><rect x="18" y="18" width="4" height="4" rx="1"/></svg></div>
+            <div class="qr-name">Bio page</div>
+            <div class="qr-slug">tap-d.link/@emma</div>
+            <div class="qr-dl">Download PNG / SVG</div>
+          </div>
+          <div class="qr-card">
+            <div class="qr-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="1"/><rect x="18" y="18" width="4" height="4" rx="1"/></svg></div>
+            <div class="qr-name">Spotify playlist</div>
+            <div class="qr-slug">/spotify</div>
+            <div class="qr-dl">Download PNG / SVG</div>
+          </div>
+          <div class="qr-card">
+            <div class="qr-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="1"/><rect x="18" y="18" width="4" height="4" rx="1"/></svg></div>
+            <div class="qr-name">ColorPal app</div>
+            <div class="qr-slug">/colorpal</div>
+            <div class="qr-dl">Download PNG / SVG</div>
+          </div>
+          <div class="qr-card">
+            <div class="qr-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="1"/><rect x="18" y="18" width="4" height="4" rx="1"/></svg></div>
+            <div class="qr-name">Podcast</div>
+            <div class="qr-slug">/podcast</div>
+            <div class="qr-dl">Download PNG / SVG</div>
+          </div>
+          <div class="qr-card">
+            <div class="qr-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="1"/><rect x="18" y="18" width="4" height="4" rx="1"/></svg></div>
+            <div class="qr-name">Design course</div>
+            <div class="qr-slug">/course</div>
+            <div class="qr-dl">Download PNG / SVG</div>
+          </div>
+          <div class="qr-card" style="border-style:dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--color-text-secondary);cursor:pointer">
+            <div style="font-size:20px;margin-bottom:4px">+</div>
+            <div style="font-size:11px">QR studio (Pro)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-settings">
+        <div class="settings-section">
+          <div class="sec-title">Account</div>
+          <div class="settings-row"><span class="sr-label">Email</span><span class="sr-val">emma@gmail.com</span></div>
+          <div class="settings-row"><span class="sr-label">Username</span><span class="sr-val">@emma</span><button class="sr-btn">Change</button></div>
+          <div class="settings-row"><span class="sr-label">Display name</span><span class="sr-val">Emma Creates</span><button class="sr-btn">Edit</button></div>
+        </div>
+        <div class="settings-section">
+          <div class="sec-title">Plan & billing</div>
+          <div class="settings-row"><span class="sr-label">Current plan</span><span class="sr-val">Free</span><button class="sr-btn" style="color:var(--color-text-warning)">Upgrade to Pro</button></div>
+          <div class="settings-row"><span class="sr-label">Links used</span><span class="sr-val">5 / 10</span></div>
+          <div class="settings-row"><span class="sr-label">Clicks this month</span><span class="sr-val">4,821 / 5,000</span></div>
+        </div>
+        <div class="settings-section">
+          <div class="sec-title">API</div>
+          <div class="settings-row"><span class="sr-label">API key</span><span class="sr-val" style="font-family:var(--font-mono);font-size:11px">td_live_****...a8f2</span><button class="sr-btn">Reveal</button></div>
+          <div class="settings-row"><span class="sr-label">Docs</span><button class="sr-btn">Open API docs &#8599;</button></div>
+        </div>
+        <div class="settings-section" style="border-color:var(--color-border-danger)">
+          <div class="sec-title" style="color:var(--color-text-danger)">Danger zone</div>
+          <div class="settings-row"><span class="sr-label">Delete account</span><button class="sr-btn" style="color:var(--color-text-danger)">Delete permanently</button></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.side-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+  const titles = {home:'Dashboard',links:'Links',bio:'Bio page',qr:'QR codes',settings:'Settings'};
+  document.getElementById('page-title').textContent = titles[id];
+}
+</script>

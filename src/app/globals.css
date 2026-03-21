@@ -8,6 +8,7 @@
   --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-serif: "Playfair Display", Georgia, serif;
   --font-mono: "JetBrains Mono", monospace;
+  --font-inter: "Inter", system-ui, sans-serif;
 
   /* --- Brand / Page Background--- */
   --color-page-bg: #ddd6f3;
@@ -62,6 +63,28 @@
   --shadow-lg: 0 16px 48px rgba(10, 10, 15, 0.16);
   --shadow-glow: 0 0 32px rgba(196, 160, 232, 0.35);
   --shadow-card: 0 2px 8px rgba(10, 10, 15, 0.06), 0 8px 32px rgba(10, 10, 15, 0.1);
+
+  /* --- Animations --- */
+  --animate-fade-up: fadeUp 0.8s var(--ease-out) both;
+  --animate-float: floatY 6s ease-in-out infinite;
+  --animate-float-bio: floatBio 6s ease-in-out infinite;
+
+  /* --- Dashboard Theme Tokens --- */
+  --color-dash-bg: #f5f3f0;
+  --color-dash-white: #ffffff;
+  --color-dash-dark: #0a0a0f;
+  --color-dash-text: #1a1a2e;
+  --color-dash-text-muted: #8a8a9a;
+  --color-dash-border: #e8e6e2;
+  --color-dash-border-light: #f0eeea;
+  --color-dash-gold: #e8b86d;
+  --color-dash-gold-dark: #b8860b;
+  --color-dash-gold-light: #faeeda;
+  --color-dash-mint: #a3e8c8;
+  --color-dash-blue: #a0c4e8;
+  --color-dash-pink: #e8a0bf;
+  --color-dash-green: #22c55e;
+  --color-dash-red: #ef4444;
 }
 
 /* --- CSS variables (mirroring theme tokens for raw CSS access) --- */

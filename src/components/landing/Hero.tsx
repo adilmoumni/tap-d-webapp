@@ -18,70 +18,53 @@ const fadeUp = (delay: number) => ({
 export function Hero() {
   return (
     <section
-      className="relative bg-dark overflow-hidden min-h-screen"
+      className="relative bg-dark overflow-hidden min-h-screen pt-[160px] px-6 pb-[100px] flex flex-col items-center text-center"
       style={{ borderRadius: "0 0 28px 28px" }}
     >
-      {/* Bottom fade overlay */}
+      {/* Bottom fade overlay to match HTML template */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-[200px] pointer-events-none z-[2]"
+        className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none z-[5]"
         style={{ background: "linear-gradient(to top, #0a0a0f, transparent)" }}
       />
 
       {/* Hero content */}
-      <div className="relative z-[3] max-w-[820px] mx-auto px-6 pt-40 pb-24 text-center">
+      <div className="relative z-[10] max-w-[820px] mx-auto mb-20 animate-fade-up">
         {/* Heading */}
-        <motion.h1
-          {...fadeUp(0.2)}
-          className="font-serif text-[clamp(2.8rem,6vw,4.8rem)] font-medium text-text-on-dark leading-[1.08] tracking-[-0.025em] mb-6"
-        >
+        <h1 className="font-serif text-[clamp(2.8rem,6vw,4.8rem)] font-medium text-text-on-dark leading-[1.08] tracking-[-0.025em] mb-6">
           One Link for{" "}
           <em className="not-italic text-accent-pink">Everything.</em>
           <br />
           Smart Enough to Know Where.
-        </motion.h1>
+        </h1>
 
         {/* Subheading */}
-        <motion.p
-          {...fadeUp(0.35)}
-          className="text-[clamp(1rem,1.6vw,1.12rem)] text-text-on-dark/55 max-w-[540px] mx-auto mb-10 leading-[1.7]"
-        >
+        <p className="text-[clamp(1rem,1.6vw,1.12rem)] text-text-on-dark/55 max-w-[540px] mx-auto mb-10 leading-[1.7]">
           The link-in-bio for creators who need more. Every link auto-detects devices and sends your audience to the right app store, podcast player, or platform.
-        </motion.p>
+        </p>
 
         {/* CTA button */}
-        <motion.div {...fadeUp(0.5)}>
+        <div className="flex flex-col items-center gap-4">
           <Button
             variant="accent"
             size="lg"
             dot
             asChild
-            className="text-[0.95rem]"
+            className="text-[0.95rem] font-bold px-8"
           >
             <a href="/signup">Claim Your Page — Free</a>
           </Button>
-        </motion.div>
-
-        {/* Meta */}
-        <motion.p
-          {...fadeUp(0.6)}
-          className="mt-4 text-[0.82rem] text-text-on-dark/55"
-        >
-          No credit card · Free forever · No ads
-        </motion.p>
+          
+          <p className="text-[0.82rem] text-text-on-dark/40 tracking-wide">
+            No credit card · Free forever · Setup in 2 min
+          </p>
+        </div>
       </div>
 
-      {/* Floating cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 28 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.65, ease: [0, 0, 0.2, 1] }}
-        className="relative z-[1]"
-      >
+      {/* Floating cards container — relative positioning to flow AFTER text */}
+      <div className="relative w-full max-w-[1100px] z-[1] animate-fade-up delay-300">
         <FloatingCards />
-      </motion.div>
+      </div>
 
-      {/* Extra bottom padding so cards don't clip */}
-      <div className="h-16 md:h-24" />
     </section>
   );
 }
