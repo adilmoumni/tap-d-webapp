@@ -11,12 +11,12 @@
   --font-inter: "Inter", system-ui, sans-serif;
 
   /* --- Brand / Page Background--- */
-  --color-page-bg: #ddd6f3;
+  --color-page-bg: #ffe7bf; /* Professional soft gold/cream */
 
-  /* --- Lavender scale --- */
-  --color-lavender-light: #e8e3f5;
-  --color-lavender: #c9bfed;
-  --color-lavender-dark: #a897d6;
+  /* --- Lavender scale (Repurposed to Gold/Sand) --- */
+  --color-lavender-light: #fdf4e3;
+  --color-lavender: #e8b86d;
+  --color-lavender-dark: #b8860b;
 
   /* --- Dark scale (glass cards, panels) --- */
   --color-dark: #0a0a0f;
@@ -32,15 +32,15 @@
 
   /* --- Neutral surfaces --- */
   --color-surface: #ffffff;
-  --color-surface-muted: #f4f2fb;
-  --color-border: rgba(201, 191, 237, 0.35);
-  --color-border-strong: rgba(201, 191, 237, 0.65);
+  --color-surface-muted: #fdfaf5;
+  --color-border: rgba(232, 184, 109, 0.25);
+  --color-border-strong: rgba(232, 184, 109, 0.55);
 
   /* --- Text --- */
   --color-text-primary: #1a1625;
   --color-text-secondary: #5b5470;
   --color-text-muted: #9b91b5;
-  --color-text-on-dark: #f0ecff;
+  --color-text-on-dark: #fbf7ee;
 
   /* --- Semantic --- */
   --color-success: #22c55e;
@@ -61,7 +61,7 @@
   --shadow: 0 4px 16px rgba(10, 10, 15, 0.08);
   --shadow-md: 0 8px 32px rgba(10, 10, 15, 0.12);
   --shadow-lg: 0 16px 48px rgba(10, 10, 15, 0.16);
-  --shadow-glow: 0 0 32px rgba(196, 160, 232, 0.35);
+  --shadow-glow: 0 0 32px rgba(232, 184, 109, 0.25);
   --shadow-card: 0 2px 8px rgba(10, 10, 15, 0.06), 0 8px 32px rgba(10, 10, 15, 0.1);
 
   /* --- Animations --- */
@@ -82,7 +82,7 @@
   --color-dash-gold-light: #faeeda;
   --color-dash-mint: #a3e8c8;
   --color-dash-blue: #a0c4e8;
-  --color-dash-pink: #e8a0bf;
+  --color-dash-pink: #d4af37; /* Professional gold replacing pink */
   --color-dash-green: #22c55e;
   --color-dash-red: #ef4444;
 }

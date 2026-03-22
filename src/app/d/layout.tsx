@@ -2,14 +2,17 @@
 
 import { AuthGuard } from "@/components/shared/AuthGuard";
 import { DashboardProvider } from "@/contexts/DashboardContext";
+import { BioEditorProvider } from "@/contexts/BioEditorContext";
 import { IconSidebar } from "@/components/dashboard/IconSidebar";
 import { SubTabs } from "@/components/dashboard/SubTabs";
 import { PhonePreview } from "@/components/dashboard/PhonePreview";
+import { SaveIndicator } from "@/components/dashboard/SaveIndicator";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <DashboardProvider>
+        <BioEditorProvider>
         <div
           className="flex flex-col h-screen overflow-hidden"
           style={{ fontFamily: "'Inter', system-ui, sans-serif", background: "#f5f3f0" }}
@@ -29,15 +32,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex flex-1 overflow-hidden">
             <IconSidebar />
             <SubTabs />
-            <main
-              className="flex-1 overflow-y-auto bg-white"
-              style={{ padding: "28px 36px" }}
-            >
+            <main className="relative flex-1 overflow-y-auto bg-white" style={{ padding: "28px 36px" }}>
+              <SaveIndicator />
               {children}
             </main>
             <PhonePreview />
           </div>
         </div>
+        </BioEditorProvider>
       </DashboardProvider>
     </AuthGuard>
   );

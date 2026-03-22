@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/shared/Logo";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/hooks/useAuth";
 import { navLinks } from "@/config/site";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 ------------------------------------------------------------------ */
 
 export function Navbar() {
+  const { user } = useAuth();
   const [activeSection, setActiveSection] = React.useState<string>("#bio");
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
@@ -92,7 +94,7 @@ export function Navbar() {
             asChild
             className="bg-white text-dark hover:bg-lavender-light font-bold text-[0.82rem] h-9 px-5 hidden md:inline-flex shadow-sm"
           >
-            <a href="/signup">Get Started</a>
+            <Link href={user ? "/d/dashboard" : "/signup"}>{user ? "Dashboard" : "Get Started"}</Link>
           </Button>
 
           {/* Mobile toggle */}
@@ -134,7 +136,7 @@ export function Navbar() {
             ))}
             <div className="px-2 pt-2 pb-1">
               <Button variant="accent" size="sm" full asChild>
-                <a href="/signup">Get Started Free</a>
+                <Link href={user ? "/d/dashboard" : "/signup"}>{user ? "Dashboard" : "Get Started Free"}</Link>
               </Button>
             </div>
           </motion.div>

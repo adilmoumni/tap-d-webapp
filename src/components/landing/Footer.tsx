@@ -11,7 +11,7 @@ import { footerColumns, socialLinks } from "@/config/site";
 
 export function Footer() {
   return (
-    <footer className="bg-dark rounded-t-[28px] mx-3 mt-3 px-10 pt-20 pb-10 text-text-on-dark">
+    <footer className="bg-dark rounded-[18px] mb-3 mx-3 mt-3 px-10 pt-20 pb-10 text-text-on-dark">
 
       {/* Top 4-col grid */}
       <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr_1fr] gap-12 mb-16">

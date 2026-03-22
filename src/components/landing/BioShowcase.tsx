@@ -5,7 +5,9 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { EmmaCard } from "./EmmaCard";
-import { Check, TrendingUp, Globe } from "lucide-react";
+import { Smartphone, Camera, Users, Zap, CheckCircle2, Check, TrendingUp, Globe } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
 
 /* ------------------------------------------------------------------
    BioShowcase – Re-designed premium section:
@@ -35,11 +37,12 @@ const fadeUp: Variants = {
 };
 
 export function BioShowcase() {
+  const { user } = useAuth();
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section ref={ref} id="bio" className="relative bg-white rounded-[40px] mx-4 px-6 py-24 lg:px-20 lg:py-32 overflow-hidden border border-border/40 shadow-sm">
+    <section ref={ref} id="bio" className="relative bg-white rounded-[40px] mt-5  mx-4 px-6 py-24 lg:px-20 lg:py-32 overflow-hidden border border-border/40 shadow-sm">
       
       {/* Background Decorative Glow */}
       <div className="absolute -top-24 -right-24 w-[500px] h-[500px] bg-lavender/10 blur-[120px] rounded-full pointer-events-none" />
@@ -90,8 +93,8 @@ export function BioShowcase() {
           </ul>
 
           <div className="flex flex-wrap gap-4">
-            <Button variant="primary" size="lg" dot className="px-8" asChild>
-              <a href="/signup">Claim Your @username</a>
+            <Button variant="primary" size="lg" asChild className="px-8 font-bold text-[0.95rem]">
+              <Link href={user ? "/d/dashboard" : "/signup"}>{user ? "Go to Dashboard" : "Claim Your @username"}</Link>
             </Button>
           </div>
         </motion.div>

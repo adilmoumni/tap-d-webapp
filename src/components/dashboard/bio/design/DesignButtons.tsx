@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useBioEditor } from "@/contexts/BioEditorContext";
 
 export function DesignButtons() {
-  const [activeShape, setActiveShape] = useState<"rounded" | "pill" | "square">("rounded");
-  const [activeFill, setActiveFill] = useState<"filled" | "outline" | "shadow">("filled");
+  const { data, updateTheme } = useBioEditor();
+  const activeShape = data.theme.buttonStyle;
+  const activeFill = data.theme.buttonFill;
 
   return (
     <div className="font-inter">
@@ -16,7 +17,7 @@ export function DesignButtons() {
         <label className="block text-[12px] font-semibold text-[#1a1a2e] mb-3">Shape</label>
         <div className="grid grid-cols-3 gap-3">
           <button
-            onClick={() => setActiveShape("rounded")}
+            onClick={() => updateTheme("buttonStyle", "rounded")}
             className={cn(
               "p-3 rounded-[12px] border transition-all flex flex-col items-center",
               activeShape === "rounded" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"
@@ -27,7 +28,7 @@ export function DesignButtons() {
           </button>
 
           <button
-            onClick={() => setActiveShape("pill")}
+            onClick={() => updateTheme("buttonStyle", "pill")}
             className={cn(
               "p-3 rounded-[12px] border transition-all flex flex-col items-center",
               activeShape === "pill" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"
@@ -38,7 +39,7 @@ export function DesignButtons() {
           </button>
 
           <button
-            onClick={() => setActiveShape("square")}
+            onClick={() => updateTheme("buttonStyle", "square")}
             className={cn(
               "p-3 rounded-[12px] border transition-all flex flex-col items-center",
               activeShape === "square" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"
@@ -55,7 +56,7 @@ export function DesignButtons() {
         <label className="block text-[12px] font-semibold text-[#1a1a2e] mb-3">Fill</label>
         <div className="grid grid-cols-3 gap-3">
           <button
-            onClick={() => setActiveFill("filled")}
+            onClick={() => updateTheme("buttonFill", "filled")}
             className={cn(
               "p-3 rounded-[12px] border transition-all flex flex-col items-center",
               activeFill === "filled" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"
@@ -66,7 +67,7 @@ export function DesignButtons() {
           </button>
 
           <button
-            onClick={() => setActiveFill("outline")}
+            onClick={() => updateTheme("buttonFill", "outline")}
             className={cn(
               "p-3 rounded-[12px] border transition-all flex flex-col items-center",
               activeFill === "outline" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"
@@ -77,7 +78,7 @@ export function DesignButtons() {
           </button>
 
           <button
-            onClick={() => setActiveFill("shadow")}
+            onClick={() => updateTheme("buttonFill", "shadow")}
             className={cn(
               "p-3 rounded-[12px] border transition-all flex flex-col items-center",
               activeFill === "shadow" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"

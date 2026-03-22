@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useBioEditor } from "@/contexts/BioEditorContext";
 
 export function DesignWallpaper() {
-  const [activeWall, setActiveWall] = useState<"flat" | "image" | "gradient">("flat");
+  const { data, updateTheme } = useBioEditor();
+  const activeWall = data.theme.wallpaper;
 
   return (
     <div className="font-inter">
@@ -13,7 +14,7 @@ export function DesignWallpaper() {
       <label className="block text-[12px] font-semibold text-[#1a1a2e] mb-3">Background</label>
       <div className="grid grid-cols-3 gap-3">
         <button
-          onClick={() => setActiveWall("flat")}
+          onClick={() => updateTheme("wallpaper", "flat")}
           className={cn(
             "relative p-3 rounded-[12px] border text-center transition-all",
             activeWall === "flat" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"
@@ -24,7 +25,7 @@ export function DesignWallpaper() {
         </button>
 
         <button
-          onClick={() => setActiveWall("image")}
+          onClick={() => updateTheme("wallpaper", "image")}
           className={cn(
             "relative p-3 rounded-[12px] border text-center transition-all",
             activeWall === "image" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"
@@ -40,7 +41,7 @@ export function DesignWallpaper() {
         </button>
 
         <button
-          onClick={() => setActiveWall("gradient")}
+          onClick={() => updateTheme("wallpaper", "gradient")}
           className={cn(
             "relative p-3 rounded-[12px] border text-center transition-all",
             activeWall === "gradient" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"

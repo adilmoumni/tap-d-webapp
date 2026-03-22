@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useBioEditor } from "@/contexts/BioEditorContext";
 
 function SimpleToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
@@ -23,8 +23,7 @@ function SimpleToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 }
 
 export function DesignFooter() {
-  const [branding, setBranding] = useState(true);
-  const [joinCta, setJoinCta] = useState(true);
+  const { data, updateTheme } = useBioEditor();
 
   return (
     <div className="font-inter">
@@ -36,7 +35,10 @@ export function DesignFooter() {
             <div className="text-[13px] font-semibold text-[#1a1a2e] mb-0.5">Show tap-d.link branding</div>
             <div className="text-[11px] text-[#8a8a9a]">Remove on Pro</div>
           </div>
-          <SimpleToggle on={branding} onToggle={() => setBranding(!branding)} />
+          <SimpleToggle
+            on={data.theme.showBranding}
+            onToggle={() => updateTheme("showBranding", !data.theme.showBranding)}
+          />
         </div>
 
         <div className="flex items-center justify-between p-4 rounded-[12px] border border-[#e8e6e2] bg-white">
@@ -44,7 +46,10 @@ export function DesignFooter() {
             <div className="text-[13px] font-semibold text-[#1a1a2e] mb-0.5">Show Join CTA</div>
             <div className="text-[11px] text-[#8a8a9a]">Drives signups</div>
           </div>
-          <SimpleToggle on={joinCta} onToggle={() => setJoinCta(!joinCta)} />
+          <SimpleToggle
+            on={data.theme.showJoinCta}
+            onToggle={() => updateTheme("showJoinCta", !data.theme.showJoinCta)}
+          />
         </div>
       </div>
     </div>

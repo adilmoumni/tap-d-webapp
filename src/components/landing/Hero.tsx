@@ -1,8 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { FloatingCards } from "./FloatingCards";
+import { useAuth } from "@/hooks/useAuth";
 
 /* ------------------------------------------------------------------
    Hero – dark full-height section with rounded bottom corners.
@@ -16,6 +18,8 @@ const fadeUp = (delay: number) => ({
 });
 
 export function Hero() {
+  const { user } = useAuth();
+
   return (
     <section
       className="relative bg-dark overflow-hidden min-h-screen pt-[160px] px-6 pb-[100px] flex flex-col items-center text-center"
@@ -51,7 +55,7 @@ export function Hero() {
             asChild
             className="text-[0.95rem] font-bold px-8"
           >
-            <a href="/signup">Claim Your Page — Free</a>
+            <Link href={user ? "/d/dashboard" : "/signup"}>{user ? "Go to Dashboard" : "Claim Your Page — Free"}</Link>
           </Button>
           
           <p className="text-[0.82rem] text-text-on-dark/40 tracking-wide">

@@ -29,6 +29,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://tap-d.link"),
   title: {
     default: "tap-d.link — Smart Links for Every Device",
     template: "%s | tap-d.link",

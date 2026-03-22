@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { signInWithGoogle } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 /* ------------------------------------------------------------------
    Login page — /login
@@ -27,6 +28,13 @@ export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/d/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   const handleGoogle = async () => {
     setLoading(true);

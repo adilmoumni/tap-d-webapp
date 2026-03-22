@@ -10,13 +10,13 @@ import { DesignFooter } from "./DesignFooter";
 
 export function BioDesignEditor({ activeTab }: { activeTab: string }) {
   switch (activeTab) {
-    case "d-header": return <DesignHeader />;
-    case "d-theme": return <DesignTheme />;
-    case "d-wallpaper": return <DesignWallpaper />;
-    case "d-text": return <DesignText />;
-    case "d-buttons": return <DesignButtons />;
-    case "d-colors": return <DesignColors />;
-    case "d-footer": return <DesignFooter />;
+    case "header": return <DesignHeader />;
+    case "theme": return <DesignTheme />;
+    case "wallpaper": return <DesignWallpaper />;
+    case "text": return <DesignText />;
+    case "buttons": return <DesignButtons />;
+    case "colors": return <DesignColors />;
+    case "footer": return <DesignFooter />;
     default: return null;
   }
 }

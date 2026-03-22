@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { signInWithGoogle } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Smartphone, Target, AreaChart } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 /* ------------------------------------------------------------------
    Signup page — /signup
@@ -28,6 +29,13 @@ export default function SignupPage() {
   const router  = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/d/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   const handleGoogle = async () => {
     setLoading(true);

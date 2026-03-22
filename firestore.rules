@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Users ──
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ── Usernames (uniqueness reservation) ──
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && !exists(/databases/$(database)/documents/usernames/$(username))
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+      // No updates — delete old + create new to change username
+    }
+
+    // ── Bio pages ──
+    match /biopages/{username} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+
+      // Links subcollection
+      match /links/{linkId} {
+        allow read: if true;
+        // Only allow clicks field increment from anyone (for the click API)
+        // Full writes require ownership
+        allow update: if request.auth == null
+          ? (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clicks']))
+          : (get(/databases/$(database)/documents/biopages/$(username)).data.uid == request.auth.uid);
+        allow create, delete: if request.auth != null
+          && get(/databases/$(database)/documents/biopages/$(username)).data.uid == request.auth.uid;
+      }
+
+      // Stats subcollection (daily aggregates — written by click API)
+      match /stats/{date} {
+        allow read: if request.auth != null
+          && get(/databases/$(database)/documents/biopages/$(username)).data.uid == request.auth.uid;
+        allow write: if true;  // click tracking writes from server API route
+      }
+    }
+
+    // ── Legacy bio_pages collection ──
+    match /bio_pages/{docId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+    }
+
+    // ── Smart links ──
+    match /links/{linkId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+
+      // Per-link daily stats
+      match /stats/{date} {
+        allow read: if request.auth != null
+          && get(/databases/$(database)/documents/links/$(linkId)).data.uid == request.auth.uid;
+        allow write: if true;  // click tracking writes from server
+      }
+    }
+
+    // ── Click events ──
+    match /clicks/{clickId} {
+      allow read: if request.auth != null;
+      allow create: if true;  // server-side click logging
+    }
+  }
+}

@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 
 /* ------------------------------------------------------------------
    AuthGuard – wraps protected (dashboard) routes.
    Behavior:
-   • loading → show skeleton placeholder
-   • no user → redirect to /login
-   • user    → render children
+   • loading  → show skeleton placeholder
+   • no user  → redirect to /login
+   • no username → redirect to /d/claim-username
+   • user     → render children
 ------------------------------------------------------------------ */
 
 interface AuthGuardProps {
@@ -18,14 +19,24 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading) return;
+
+    if (!user) {
       router.replace("/login");
+      return;
     }
-  }, [user, loading, router]);
+
+    // Redirect to claim page if user has no username
+    // (but don't redirect if already on the claim page)
+    if (profile && !profile.username && pathname !== "/d/claim-username") {
+      router.replace("/d/claim-username");
+    }
+  }, [user, profile, loading, router, pathname]);
 
   if (loading) {
     return (
@@ -38,10 +49,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  if (!user) {
-    // Redirect in progress — render nothing
-    return null;
-  }
+  if (!user) return null;
 
   return <>{children}</>;
 }

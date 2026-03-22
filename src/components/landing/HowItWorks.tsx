@@ -2,9 +2,11 @@
 
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { QRCode } from "@/components/shared/QRCode";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Apple,
   Play,
@@ -61,9 +63,9 @@ const tabs = [
       <div className="text-center">
         <div className="inline-flex flex-col gap-2.5 w-56">
           {[
-            { label: "Design Course", icon: Palette, bg: "bg-[#f8f0fc]" },
-            { label: "Podcast", icon: Mic, bg: "bg-[#fce8f0]" },
-            { label: "My App", icon: Smartphone, bg: "bg-[#e8fcf0]" },
+            { label: "Design Course", icon: Palette, bg: "bg-[#fdfaf5]" },
+            { label: "Podcast", icon: Mic, bg: "bg-[#f5e6d3]" },
+            { label: "My App", icon: Smartphone, bg: "bg-[#e1f5ee]" },
           ].map((l) => (
             <div key={l.label} className={cn("px-3.5 py-3 rounded-xl text-sm font-bold text-text-primary text-left flex items-center gap-3 shadow-sm", l.bg)}>
               <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
@@ -99,7 +101,7 @@ const tabs = [
     body: "Auto-generated QR for every link. Custom colors, shapes, and logo embedding. Download PNG, SVG, or PDF for print campaigns or events.",
     visual: (
       <div className="flex flex-col items-center gap-5">
-        <div className="relative group p-4 bg-white rounded-[32px] shadow-2xl border border-lavender/20">
+        <div className="relative group p-4 bg-white rounded-[32px] shadow-2xl border border-accent-pink/20">
           <QRCode 
             value="https://tap-d.link/@emma" 
             size={160} 
@@ -118,6 +120,7 @@ const tabs = [
 ];
 
 export function HowItWorks() {
+  const { user } = useAuth();
   const [active, setActive] = useState(0);
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
@@ -175,12 +178,14 @@ export function HowItWorks() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <span className="inline-block px-4 py-1.5 rounded-full bg-lavender-light text-[0.75rem] font-black uppercase tracking-[0.15em] text-text-muted mb-6">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-accent-pink/15 text-[0.75rem] font-black uppercase tracking-[0.15em] text-text-muted mb-6">
               {tab.chip}
             </span>
             <h3 className="font-serif text-[2.2rem] font-medium leading-tight mb-4">{tab.heading}</h3>
             <p className="text-text-secondary text-[1rem] leading-[1.8] mb-8 max-w-[480px]">{tab.body}</p>
-            <Button variant="primary" size="lg" dot className="px-8 font-bold">Get Started Now</Button>
+            <Button variant="primary" size="lg" dot asChild className="px-8 font-bold">
+              <Link href={user ? "/d/dashboard" : "/signup"}>{user ? "Go to Dashboard" : "Get Started Now"}</Link>
+            </Button>
           </motion.div>
 
           {/* Right visual */}
@@ -189,7 +194,7 @@ export function HowItWorks() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
-            className="bg-lavender-light/40 rounded-[40px] p-12 min-h-[400px] flex items-center justify-center border border-white/50 backdrop-blur-sm relative"
+            className="bg-accent-pink/20 rounded-[40px] p-12 min-h-[400px] flex items-center justify-center border border-white/50 backdrop-blur-sm relative"
           >
             {/* Ambient background glow */}
             <div className="absolute inset-0 bg-white/30 rounded-[40px] blur-3xl -z-10 opacity-50" />

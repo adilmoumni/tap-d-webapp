@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/testtt)",
+      "Bash(curl -s http://localhost:3000/@testtt)",
+      "Bash(curl -s http://localhost:3000/api/click -X POST -H \"Content-Type: application/json\" -d '{\"\"username\"\":\"\"testtt\"\",\"\"linkId\"\":\"\"test\"\"}')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:3000/%40testtt\")",
+      "Bash(ls -la /Users/adil/Documents/GitHub/tap-d-webapp/src/app/[slug]/)",
+      "Bash(curl -s http://localhost:3000/anything-random-xyz)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/testxyz123)",
+      "Bash(curl -s http://localhost:3001/@testtt)",
+      "Bash(grep -oE 'Error[^\"\"\"\"<]{0,200}')",
+      "Bash(kill %1)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/@testtt)",
+      "Bash(curl -s http://localhost:3001/hello123)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/hello123)"
+    ],
+    "additionalDirectories": [
+      "/Users/adil/Documents/GitHub/tap-d-webapp/src/app/u",
+      "/Users/adil/Documents/GitHub/tap-d-webapp/src/app/[slug]"
+    ]
+  }
+}
