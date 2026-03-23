@@ -954,6 +954,17 @@ function LinkCard({
             );
           }
 
+          if (link.icon) {
+            return (
+              <div
+                className="rounded-md flex-shrink-0 flex items-center justify-center text-[16px]"
+                style={{ width: imgSize, height: imgSize, marginRight: mr, background: theme.accentColor + "15" }}
+              >
+                {link.icon}
+              </div>
+            );
+          }
+
           return null;
         })()}
 

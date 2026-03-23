@@ -34,15 +34,21 @@ export function LinkCard({ link, onDelete, index = 0 }: LinkCardProps) {
         "flex items-center gap-3 px-[14px] py-3",
         "bg-surface border border-border rounded-xl",
         "hover:border-lavender transition-colors duration-150 cursor-pointer",
-        !link.active && "opacity-60"
+        !link.isActive && "opacity-60"
       )}
     >
       {/* Pastel icon box */}
       <div
-        className="w-9 h-9 rounded-[10px] flex items-center justify-center text-base font-semibold flex-shrink-0"
-        style={{ background: iconBg, color: "#5b4a2f" }}
+        className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0 overflow-hidden"
+        style={{ background: !link.thumbnailUrl ? iconBg : "transparent", color: "#5b4a2f" }}
       >
-        {initial}
+        {link.thumbnailUrl ? (
+          <img src={link.thumbnailUrl} alt={link.title} className="w-full h-full object-cover" />
+        ) : link.icon ? (
+          <span>{link.icon}</span>
+        ) : (
+          initial
+        )}
       </div>
 
       {/* Title + slug */}
@@ -73,7 +79,7 @@ export function LinkCard({ link, onDelete, index = 0 }: LinkCardProps) {
       {/* Click count */}
       <div className="text-right flex-shrink-0 min-w-[50px]">
         <p className="text-[13px] font-medium text-text-primary">
-          {link.clickCount.toLocaleString()}
+          {(link.clicks || 0).toLocaleString()}
         </p>
         <p className="text-[10px] text-text-secondary">clicks</p>
       </div>

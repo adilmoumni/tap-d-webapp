@@ -40,7 +40,7 @@ export function PhonePreview() {
         )}
 
         {/* Renderer */}
-        <div className={data.theme?.headerLayout === "hero" ? "pb-2" : "px-2 pb-3"}>
+        <div className={data.theme?.headerLayout === "hero" ? "s" : "px-2 pb-3"}>
           <BioPageRenderer data={data} variant="phone" />
         </div>
       </div>

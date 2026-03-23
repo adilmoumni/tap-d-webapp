@@ -32,6 +32,7 @@ import { uploadThumbnail } from "@/lib/storage";
 import { findPlatform } from "@/lib/platforms";
 import Image from "next/image";
 import type { BioLink } from "@/types/bio";
+import { SmartLinkForm } from "@/components/dashboard/links/SmartLinkForm";
 
 /* ─────────────────────────────────────────────
    Drag handle — 2×3 dot grid
@@ -1210,15 +1211,10 @@ export function BioLinksEditor() {
     [sortedLinks, reorderLinks]
   );
 
+  const [formInitialData, setFormInitialData] = useState<Partial<BioLink> | null>(null);
+
   const handleAddLink = (name: string) => {
-    const platform = findPlatform(name);
-    addLink({
-      title: name,
-      slug: platform?.slug ?? name.toLowerCase().replace(/[\s/]/g, "-"),
-      url: platform?.urlPrefix ?? "",
-      fallbackUrl: platform?.urlPrefix ?? "",
-      icon: platform?.slug ?? "",
-    });
+    setFormInitialData({ title: name });
     setShowPopup(false);
   };
 
@@ -1280,6 +1276,25 @@ export function BioLinksEditor() {
         onClose={() => setShowPopup(false)}
         onAdd={handleAddLink}
       />
+
+      {/* SmartLinkForm Modal */}
+      {formInitialData && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#1a1a2e]/40 p-4 overflow-y-auto backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[20px] p-6 max-w-2xl w-full my-auto shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+             <h2 className="text-xl font-bold mb-4 text-[#1a1a2e] sticky top-0 bg-white z-10 py-2 border-b border-[#e8e6e2]">Complete your link</h2>
+             <SmartLinkForm 
+               mode="create" 
+               initialData={formInitialData} 
+               onSuccess={(link: BioLink) => {
+                 setFormInitialData(null);
+                 // Also add directly to Bio editor context state so it renders immediately
+                 addLink(link);
+               }}
+               onCancel={() => setFormInitialData(null)}
+             />
+          </div>
+        </div>
+      )}
     </>
   );
 }

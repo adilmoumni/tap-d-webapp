@@ -41,7 +41,7 @@ export async function createLink(
   const ref = await addDoc(collection(db, "links"), {
     ...stripUndefined(data),
     uid,
-    clickCount: 0,
+    clicks: 0,
     createdAt: serverTimestamp(),
   });
   return ref.id;
@@ -66,14 +66,14 @@ export async function getActiveLinksForUser(uid: string): Promise<SmartLink[]> {
   const q = query(
     collection(db, "links"),
     where("uid", "==", uid),
-    where("active", "==", true)
+    where("isActive", "==", true)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as SmartLink);
 }
 
 export async function getLinkBySlug(slug: string): Promise<SmartLink | null> {
-  const q = query(collection(db, "links"), where("slug", "==", slug), where("active", "==", true));
+  const q = query(collection(db, "links"), where("slug", "==", slug), where("isActive", "==", true));
   const snap = await getDocs(q);
   if (snap.empty) return null;
   const d = snap.docs[0];
@@ -117,8 +117,8 @@ export function subscribeToUserLinks(
         const links = snap.docs
           .map((d) => ({ id: d.id, ...d.data() }) as SmartLink)
           .sort((a, b) => {
-            const aTime = (a.createdAt as { toMillis?: () => number }).toMillis?.() ?? 0;
-            const bTime = (b.createdAt as { toMillis?: () => number }).toMillis?.() ?? 0;
+            const aTime = a.createdAt && (a.createdAt as any).toMillis ? (a.createdAt as any).toMillis() : 0;
+            const bTime = b.createdAt && (b.createdAt as any).toMillis ? (b.createdAt as any).toMillis() : 0;
             return bTime - aTime;
           });
         callback(links);

@@ -33,7 +33,21 @@ export default function LinksPage() {
   });
 
   return (
-    <div className="p-5">
+    <div className="p-5 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-serif font-medium text-text-primary">Links</h1>
+          <p className="text-xs text-text-muted">Manage your smart links and redirects</p>
+        </div>
+        <Link
+          href="/d/links/new"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-dark text-[#f0eef5] text-xs font-medium hover:bg-dark-card transition-colors shadow-sm"
+        >
+          <span className="w-[5px] h-[5px] rounded-full bg-accent-pink" />
+          Create new
+        </Link>
+      </div>
+
       {/* Search + filter bar */}
       <div className="flex items-center gap-2 mb-4">
         <input

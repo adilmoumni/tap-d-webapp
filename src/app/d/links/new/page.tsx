@@ -1,6 +1,11 @@
-import { LinkForm } from "@/components/dashboard/LinkForm";
+"use client";
+
+import { SmartLinkForm } from "@/components/dashboard/links/SmartLinkForm";
+import { useRouter } from "next/navigation";
 
 export default function NewLinkPage() {
+  const router = useRouter();
+  
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
       <div className="mb-6">
@@ -10,7 +15,11 @@ export default function NewLinkPage() {
         </p>
       </div>
       <div className="bg-surface border border-border rounded-2xl p-6">
-        <LinkForm />
+        <SmartLinkForm 
+          mode="create" 
+          onSuccess={() => router.push("/d/links")} 
+          onCancel={() => router.push("/d/links")} 
+        />
       </div>
     </div>
   );

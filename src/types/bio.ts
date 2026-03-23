@@ -62,6 +62,7 @@ export interface BioLink {
   androidUrl?: string;
   fallbackUrl: string;
   isVisible: boolean;
+  isActive: boolean;
   clicks: number;
   order: number;
   layout?: "classic" | "featured";

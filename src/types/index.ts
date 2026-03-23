@@ -25,6 +25,8 @@ export interface SmartLink {
   slug: string;                   // e.g. "my-app"
   title: string;
   description?: string;
+  icon?: string;
+  thumbnailUrl?: string | null;
   // Platform-specific URLs
   urlIOS?: string;
   urlAndroid?: string;
@@ -34,8 +36,8 @@ export interface SmartLink {
   utmMedium?: string;
   utmCampaign?: string;
   // Metadata
-  active: boolean;
-  clickCount: number;
+  isActive: boolean;
+  clicks: number;
   isSmart: boolean;               // true if has platform-specific URLs
   createdAt: Timestamp | Date;
   updatedAt?: Timestamp | Date;
