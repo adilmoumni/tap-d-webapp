@@ -32,13 +32,15 @@ export function PhonePreview() {
         className="w-[260px] bg-white rounded-[30px] border border-[#e8e6e2] overflow-hidden flex flex-col"
         style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.05)" }}
       >
-        {/* Notch */}
-        <div className="flex justify-center pt-3 pb-2">
-          <div className="w-[70px] h-[5px] bg-[#f5f3f0] rounded-full" />
-        </div>
+        {/* Notch (classic only) */}
+        {data.theme?.headerLayout !== "hero" && (
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-[70px] h-[5px] bg-[#f5f3f0] rounded-full" />
+          </div>
+        )}
 
         {/* Renderer */}
-        <div className="px-2 pb-3">
+        <div className={data.theme?.headerLayout === "hero" ? "pb-2" : "px-2 pb-3"}>
           <BioPageRenderer data={data} variant="phone" />
         </div>
       </div>

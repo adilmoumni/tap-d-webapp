@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /* ------------------------------------------------------------------
-   Middleware — rewrites /@username URLs to /bio/[username] internally.
+   Proxy — rewrites /@username URLs to /u/[username] internally.
    This avoids issues with Next.js treating @ as a parallel route prefix.
 ------------------------------------------------------------------ */
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Rewrite /@username → /bio/username (internal route)

@@ -38,6 +38,15 @@ export interface BioLinkPlain {
   clicks: number;
   order: number;
   thumbnailUrl?: string;
+  layout?: "classic" | "featured";
+  lockType?: "none" | "code" | "password" | "sensitive";
+  lockCode?: string;
+  lockPassword?: string;
+  scheduleStart?: string | null;
+  scheduleEnd?: string | null;
+  prioritize?: "none" | "animate" | "redirect";
+  animationType?: "buzz" | "wobble" | "pop" | "swipe";
+  redirectUntil?: string | null;
   createdAt: string | null;
 }
 
@@ -97,6 +106,15 @@ export async function getBioPageServer(username: string): Promise<BioPagePlain |
       clicks: l.clicks ?? 0,
       order: l.order ?? 0,
       thumbnailUrl: l.thumbnailUrl,
+      layout: l.layout ?? "classic",
+      lockType: l.lockType ?? "none",
+      lockCode: l.lockCode,
+      lockPassword: l.lockPassword,
+      scheduleStart: l.scheduleStart ?? null,
+      scheduleEnd: l.scheduleEnd ?? null,
+      prioritize: l.prioritize ?? "none",
+      animationType: l.animationType ?? "buzz",
+      redirectUntil: l.redirectUntil ?? null,
       createdAt: tsToString(l.createdAt),
     };
   });

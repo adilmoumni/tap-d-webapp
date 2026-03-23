@@ -64,11 +64,16 @@ export interface BioLink {
   isVisible: boolean;
   clicks: number;
   order: number;
-  thumbnailUrl?: string;
+  layout?: "classic" | "featured";
+  thumbnailUrl?: string | null;
   lockType?: "none" | "code" | "password" | "sensitive";
-  lockCode?: string;
-  lockPassword?: string;
-  scheduledAt?: Timestamp | null;
+  lockCode?: string | null;
+  lockPassword?: string | null;
+  scheduleStart?: string | null;
+  scheduleEnd?: string | null;
+  prioritize?: "none" | "animate" | "redirect";
+  animationType?: "buzz" | "wobble" | "pop" | "swipe";
+  redirectUntil?: string | null;
   createdAt: Timestamp;
 }
 

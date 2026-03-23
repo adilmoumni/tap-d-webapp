@@ -22,6 +22,7 @@ import {
   reorderBioLinks as reorderBioLinksDB,
   updateSocialLinks as updateSocialLinksDB,
 } from "@/lib/db/bio";
+import { cleanData } from "@/lib/utils";
 import type {
   BioPageData,
   BioTheme,
@@ -293,18 +294,18 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
     try {
       // Save page fields (excluding links — those go to subcollection)
       const { links: _links, ...pageFields } = data;
-      await updateBioPage(username, {
+      await updateBioPage(username, cleanData({
         displayName: pageFields.displayName,
         bio: pageFields.bio,
         avatarUrl: pageFields.avatarUrl,
         isPublic: pageFields.isPublic,
-      });
+      }));
 
       // Save theme
-      await updateBioThemeDB(username, data.theme);
+      await updateBioThemeDB(username, cleanData(data.theme));
 
       // Save social links
-      await updateSocialLinksDB(username, data.socialLinks);
+      await updateSocialLinksDB(username, data.socialLinks.map(l => cleanData(l)));
 
       // Diff links: find new, deleted, and existing
       const savedIds = new Set(savedData.links.map((l) => l.id));
@@ -314,7 +315,8 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
       const newLinks = data.links.filter((l) => !savedIds.has(l.id));
       for (const link of newLinks) {
         const { id: _id, createdAt: _ca, clicks: _cl, ...linkData } = link;
-        const newId = await addBioLinkDB(username, linkData);
+        const cleaned = cleanData(linkData);
+        const newId = await addBioLinkDB(username, cleaned);
         // Update local id to match Firestore-generated id
         link.id = newId;
       }
@@ -335,16 +337,22 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
           link.url !== saved.url ||
           link.slug !== saved.slug ||
           link.icon !== saved.icon ||
+          link.layout !== saved.layout ||
           link.thumbnailUrl !== saved.thumbnailUrl ||
           link.lockType !== saved.lockType ||
           link.lockCode !== saved.lockCode ||
           link.lockPassword !== saved.lockPassword ||
+          link.scheduleStart !== saved.scheduleStart ||
+          link.scheduleEnd !== saved.scheduleEnd ||
+          link.prioritize !== saved.prioritize ||
+          link.animationType !== saved.animationType ||
+          link.redirectUntil !== saved.redirectUntil ||
           link.isVisible !== saved.isVisible ||
           link.order !== saved.order ||
           link.isSmart !== saved.isSmart ||
           link.fallbackUrl !== saved.fallbackUrl;
         if (changed) {
-          const updates: Record<string, unknown> = {
+          const updates = cleanData({
             title: link.title,
             url: link.url,
             slug: link.slug,
@@ -353,11 +361,17 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
             order: link.order,
             isSmart: link.isSmart,
             fallbackUrl: link.fallbackUrl,
+            layout: link.layout ?? "classic",
             lockType: link.lockType ?? "none",
-          };
-          if (link.thumbnailUrl !== undefined) updates.thumbnailUrl = link.thumbnailUrl;
-          if (link.lockCode !== undefined) updates.lockCode = link.lockCode;
-          if (link.lockPassword !== undefined) updates.lockPassword = link.lockPassword;
+            thumbnailUrl: link.thumbnailUrl ?? null,
+            lockCode: link.lockCode ?? null,
+            lockPassword: link.lockPassword ?? null,
+            scheduleStart: link.scheduleStart ?? null,
+            scheduleEnd: link.scheduleEnd ?? null,
+            prioritize: link.prioritize ?? "none",
+            animationType: link.animationType ?? "buzz",
+            redirectUntil: link.redirectUntil ?? null,
+          });
           await updateBioLinkDB(username, link.id, updates);
         }
       }

@@ -21,47 +21,17 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   QrCode, ImageIcon, Star, Clock, Lock, Unlock,
   BarChart3, Trash2, Pencil, Share2, Check, X,
-  ChevronDown, ChevronUp, ExternalLink, KeyRound, ShieldAlert, Hash,
+  ChevronDown, ChevronUp, ExternalLink, KeyRound, ShieldAlert, Hash, CalendarClock, LayoutGrid,
+  Zap, ArrowRight, MinusCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AddLinkPopup } from "./AddLinkPopup";
 import { useBioEditor } from "@/contexts/BioEditorContext";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadThumbnail } from "@/lib/storage";
+import { findPlatform } from "@/lib/platforms";
+import Image from "next/image";
 import type { BioLink } from "@/types/bio";
-
-/* ─────────────────────────────────────────────
-   Platform icon map — SVG logos for known platforms
-───────────────────────────────────────────── */
-
-const PLATFORM_ICONS: Record<string, { emoji: string; bg: string; color: string }> = {
-  instagram:    { emoji: "📸", bg: "#fce8f0", color: "#E1306C" },
-  tiktok:       { emoji: "🎵", bg: "#eeedfe", color: "#000000" },
-  youtube:      { emoji: "▶",  bg: "#fef2f2", color: "#FF0000" },
-  "twitter / x":{ emoji: "𝕏",  bg: "#e8f0fc", color: "#000000" },
-  "twitter/x":  { emoji: "𝕏",  bg: "#e8f0fc", color: "#000000" },
-  twitter:      { emoji: "𝕏",  bg: "#e8f0fc", color: "#000000" },
-  x:            { emoji: "𝕏",  bg: "#e8f0fc", color: "#000000" },
-  spotify:      { emoji: "🎵", bg: "#e1f5ee", color: "#1DB954" },
-  "apple music":{ emoji: "🎵", bg: "#fce8f0", color: "#FA243C" },
-  whatsapp:     { emoji: "💬", bg: "#e1f5ee", color: "#25D366" },
-  telegram:     { emoji: "✈️", bg: "#e8f0fc", color: "#0088cc" },
-  linkedin:     { emoji: "💼", bg: "#e8f0fc", color: "#0A66C2" },
-  github:       { emoji: "⌨",  bg: "#f0eeea", color: "#181717" },
-  podcast:      { emoji: "🎙", bg: "#faeeda", color: "#9933CC" },
-  website:      { emoji: "🌐", bg: "#f0eeea", color: "#4A90D9" },
-  email:        { emoji: "✉",  bg: "#f0eeea", color: "#D44638" },
-  discord:      { emoji: "💬", bg: "#eeedfe", color: "#5865F2" },
-  snapchat:     { emoji: "👻", bg: "#faeeda", color: "#FFFC00" },
-  pinterest:    { emoji: "📌", bg: "#fef2f2", color: "#E60023" },
-  twitch:       { emoji: "🎮", bg: "#eeedfe", color: "#9146FF" },
-  shop:         { emoji: "🛒", bg: "#faeeda", color: "#96BF48" },
-};
-
-function getPlatformIcon(title: string) {
-  const key = title.toLowerCase().trim();
-  return PLATFORM_ICONS[key] ?? null;
-}
 
 /* ─────────────────────────────────────────────
    Drag handle — 2×3 dot grid
@@ -88,21 +58,28 @@ function DragHandle({ listeners, attributes }: { listeners?: any; attributes?: a
    Toggle
 ───────────────────────────────────────────── */
 
-function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+function Toggle({ on, onToggle, disabled = false }: { on: boolean; onToggle: () => void; disabled?: boolean }) {
+  const active = on && !disabled;
   return (
     <div
       role="switch"
-      aria-checked={on}
-      onClick={onToggle}
+      aria-checked={active}
+      onClick={() => {
+        if (disabled) return;
+        onToggle();
+      }}
+      title={disabled ? "Add a title and valid URL to enable" : undefined}
       className={cn(
-        "relative w-10 h-[22px] rounded-[11px] cursor-pointer transition-colors duration-200 flex-shrink-0",
-        on ? "bg-[#22c55e]" : "bg-[#e8e6e2]"
+        "relative w-10 h-[22px] rounded-[11px] transition-colors duration-200 flex-shrink-0",
+        disabled ? "bg-[#e8e6e2] opacity-50 cursor-not-allowed" : "cursor-pointer",
+        !disabled && active && "bg-[#22c55e]",
+        !disabled && !active && "bg-[#e8e6e2]"
       )}
     >
       <div
         className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white transition-all duration-200"
         style={{
-          left: on ? "calc(100% - 20px)" : "2px",
+          left: active ? "calc(100% - 20px)" : "2px",
           boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
         }}
       />
@@ -146,19 +123,19 @@ function IconBtn({
 ───────────────────────────────────────────── */
 
 function PlatformBadge({ title, size = 36 }: { title: string; size?: number }) {
-  const platform = getPlatformIcon(title);
+  const platform = findPlatform(title);
   if (platform) {
     return (
       <div
-        className="rounded-[10px] flex items-center justify-center flex-shrink-0 shadow-sm"
-        style={{
-          width: size,
-          height: size,
-          background: platform.bg,
-          fontSize: size * 0.45,
-        }}
+        className="rounded-[10px] flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden"
+        style={{ width: size, height: size, background: platform.bg }}
       >
-        {platform.emoji}
+        <Image
+          src={platform.svgPath}
+          alt={platform.name}
+          width={Math.round(size * 0.55)}
+          height={Math.round(size * 0.55)}
+        />
       </div>
     );
   }
@@ -177,75 +154,202 @@ function PlatformBadge({ title, size = 36 }: { title: string; size?: number }) {
    Inline editable text
 ───────────────────────────────────────────── */
 
+function isValidUrl(str: string): boolean {
+  try {
+    const url = new URL(str);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function InlineEdit({
   value,
   onSave,
   className,
   placeholder,
+  validate,
 }: {
   value: string;
   onSave: (val: string) => void;
   className?: string;
   placeholder?: string;
+  /** If set, validate before saving. Return error string or empty for valid. */
+  validate?: (val: string) => string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
+  const [error, setError] = useState("");
 
   const startEdit = () => {
     setDraft(value);
+    setError("");
     setEditing(true);
   };
 
   const commit = () => {
     const trimmed = draft.trim();
-    if (trimmed && trimmed !== value) {
+    if (!trimmed) {
+      cancel();
+      return;
+    }
+    if (validate) {
+      const err = validate(trimmed);
+      if (err) {
+        setError(err);
+        return;
+      }
+    }
+    if (trimmed !== value) {
       onSave(trimmed);
     }
     setEditing(false);
+    setError("");
   };
 
   const cancel = () => {
     setDraft(value);
     setEditing(false);
+    setError("");
   };
 
   if (editing) {
     return (
-      <div className="flex items-center gap-1">
-        <input
-          autoFocus
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
-            if (e.key === "Escape") cancel();
-          }}
-          onBlur={commit}
-          placeholder={placeholder}
-          className={cn(
-            "outline-none border border-[#e8b86d] rounded-[6px] px-1.5 py-0.5 bg-white",
-            className
-          )}
-        />
-        <button onClick={commit} className="text-[#22c55e] hover:text-[#16a34a]">
-          <Check size={12} />
-        </button>
-        <button onClick={cancel} className="text-[#8a8a9a] hover:text-[#1a1a2e]">
-          <X size={12} />
-        </button>
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-1">
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => { setDraft(e.target.value); setError(""); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") cancel();
+            }}
+            onBlur={commit}
+            placeholder={placeholder}
+            className={cn(
+              "outline-none border rounded-[6px] px-1.5 py-0.5 bg-white",
+              error ? "border-[#ef4444]" : "border-[#e8b86d]",
+              className
+            )}
+          />
+          <button onClick={commit} className="text-[#22c55e] hover:text-[#16a34a]">
+            <Check size={12} />
+          </button>
+          <button onMouseDown={cancel} className="text-[#8a8a9a] hover:text-[#1a1a2e]">
+            <X size={12} />
+          </button>
+        </div>
+        {error && (
+          <span className="text-[10px] text-[#ef4444] font-medium ml-0.5">{error}</span>
+        )}
       </div>
     );
   }
 
   return (
     <div className="flex items-center gap-1.5 group">
-      <span className={className}>{value || placeholder}</span>
+      <span className={className}>{value || <span className="opacity-40">{placeholder}</span>}</span>
       <button
         onClick={startEdit}
         className="opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity text-[#1a1a2e]"
       >
         <Pencil size={11} />
       </button>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Thumbnail panel (collapsible)
+───────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────
+   Layout panel (collapsible)
+───────────────────────────────────────────── */
+
+function LayoutPanel({
+  link,
+  onUpdate,
+}: {
+  link: BioLink;
+  onUpdate: (id: string, data: Partial<BioLink>) => void;
+}) {
+  const current = link.layout ?? "classic";
+
+  return (
+    <div className="px-4 pb-4 pt-1">
+      <div className="bg-[#faf8fc] rounded-[12px] p-4 space-y-3">
+        <span className="text-[12px] font-semibold text-[#1a1a2e]">Choose a layout for your link</span>
+
+        <div className="space-y-2">
+          {/* Classic */}
+          <button
+            onClick={() => onUpdate(link.id, { layout: "classic" })}
+            className={cn(
+              "w-full rounded-[12px] border p-4 text-left transition-all",
+              current === "classic"
+                ? "border-[#1a1a2e] border-2 bg-white"
+                : "border-[#e8e6e2] bg-white hover:border-[#d0cec8]"
+            )}
+          >
+            <div className="flex items-start gap-3">
+              {/* Radio */}
+              <div className={cn(
+                "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+                current === "classic" ? "border-[#1a1a2e]" : "border-[#d0cec8]"
+              )}>
+                {current === "classic" && <div className="w-2.5 h-2.5 rounded-full bg-[#1a1a2e]" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-[#1a1a2e]">Classic</div>
+                <div className="text-[11px] text-[#8a8a9a] mb-3">Efficient, direct and compact.</div>
+                {/* Mini preview */}
+                <div className="flex items-center gap-2 bg-[#e8e6e2] rounded-full px-2 py-1.5 max-w-[180px]">
+                  <div className="w-6 h-6 rounded-full bg-[#d0cec8] flex-shrink-0" />
+                  <div className="flex-1 h-2 bg-[#d0cec8] rounded-full" />
+                  <div className="w-1 h-1 rounded-full bg-[#8a8a9a]" />
+                  <div className="w-1 h-1 rounded-full bg-[#8a8a9a]" />
+                  <div className="w-1 h-1 rounded-full bg-[#8a8a9a]" />
+                </div>
+              </div>
+            </div>
+          </button>
+
+          {/* Featured */}
+          <button
+            onClick={() => onUpdate(link.id, { layout: "featured" })}
+            className={cn(
+              "w-full rounded-[12px] border p-4 text-left transition-all",
+              current === "featured"
+                ? "border-[#1a1a2e] border-2 bg-white"
+                : "border-[#e8e6e2] bg-white hover:border-[#d0cec8]"
+            )}
+          >
+            <div className="flex items-start gap-3">
+              {/* Radio */}
+              <div className={cn(
+                "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+                current === "featured" ? "border-[#1a1a2e]" : "border-[#d0cec8]"
+              )}>
+                {current === "featured" && <div className="w-2.5 h-2.5 rounded-full bg-[#1a1a2e]" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-[#1a1a2e]">Featured</div>
+                <div className="text-[11px] text-[#8a8a9a] mb-3">Make your link stand out with a larger, more attractive display.</div>
+                {/* Mini preview — card-like */}
+                <div className="max-w-[180px] rounded-[10px] overflow-hidden border border-[#e8e6e2]">
+                  <div className="h-16 bg-gradient-to-br from-[#e8b86d] to-[#d4a85c]" />
+                  <div className="px-2 py-1.5">
+                    <div className="h-2 bg-[#e8e6e2] rounded-full w-3/4 mb-1" />
+                    <div className="h-1.5 bg-[#f0eeea] rounded-full w-1/2" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -492,6 +596,320 @@ function LockPanel({
 }
 
 /* ─────────────────────────────────────────────
+   Schedule panel (collapsible)
+───────────────────────────────────────────── */
+
+function formatDateLabel(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) +
+    " at " +
+    d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function toLocalDatetime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function SchedulePanel({
+  link,
+  onUpdate,
+}: {
+  link: BioLink;
+  onUpdate: (id: string, data: Partial<BioLink>) => void;
+}) {
+  const hasSchedule = !!link.scheduleStart;
+
+  const handleClear = () => {
+    onUpdate(link.id, { scheduleStart: null, scheduleEnd: null });
+  };
+
+  return (
+    <div className="px-4 pb-4 pt-1">
+      <div className="bg-[#faf8fc] rounded-[12px] p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-semibold text-[#1a1a2e]">Schedule</span>
+          {hasSchedule && (
+            <button
+              onClick={handleClear}
+              className="text-[11px] text-[#ef4444] hover:text-[#dc2626] font-medium transition-colors"
+            >
+              Remove schedule
+            </button>
+          )}
+        </div>
+
+        <p className="text-[10px] text-[#8a8a9a] leading-snug">
+          Set when this link should be visible. It will only appear on your bio page during the scheduled window.
+        </p>
+
+        {/* Start date */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-[#1a1a2e]">
+            Start date <span className="text-[#ef4444]">*</span>
+          </label>
+          <input
+            type="datetime-local"
+            value={toLocalDatetime(link.scheduleStart)}
+            onChange={(e) => {
+              const val = e.target.value;
+              onUpdate(link.id, { scheduleStart: val ? new Date(val).toISOString() : null });
+            }}
+            className="w-full px-3 py-2 border border-[#e8e6e2] rounded-[8px] text-[12px] outline-none focus:border-[#e8b86d] transition-colors bg-white"
+          />
+          {link.scheduleStart && (
+            <p className="text-[10px] text-[#8a8a9a]">
+              <CalendarClock size={10} className="inline mr-1 opacity-60" />
+              Goes live: {formatDateLabel(link.scheduleStart)}
+            </p>
+          )}
+        </div>
+
+        {/* End date */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-[#1a1a2e]">
+            End date <span className="text-[10px] font-normal text-[#8a8a9a]">(optional)</span>
+          </label>
+          <input
+            type="datetime-local"
+            value={toLocalDatetime(link.scheduleEnd)}
+            min={toLocalDatetime(link.scheduleStart)}
+            onChange={(e) => {
+              const val = e.target.value;
+              onUpdate(link.id, { scheduleEnd: val ? new Date(val).toISOString() : null });
+            }}
+            className="w-full px-3 py-2 border border-[#e8e6e2] rounded-[8px] text-[12px] outline-none focus:border-[#e8b86d] transition-colors bg-white"
+          />
+          {link.scheduleEnd && (
+            <p className="text-[10px] text-[#8a8a9a]">
+              <CalendarClock size={10} className="inline mr-1 opacity-60" />
+              Expires: {formatDateLabel(link.scheduleEnd)}
+            </p>
+          )}
+          {!link.scheduleEnd && link.scheduleStart && (
+            <p className="text-[10px] text-[#8a8a9a] italic">No end date — link stays visible once live.</p>
+          )}
+        </div>
+
+        {/* Status indicator */}
+        {hasSchedule && (() => {
+          const now = new Date();
+          const start = new Date(link.scheduleStart!);
+          const end = link.scheduleEnd ? new Date(link.scheduleEnd) : null;
+          const isLive = now >= start && (!end || now <= end);
+          const isExpired = end && now > end;
+          const isPending = now < start;
+
+          return (
+            <div
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-[8px] text-[11px] font-semibold",
+                isLive && "bg-[#dcfce7] text-[#16a34a]",
+                isPending && "bg-[#faeeda] text-[#b8860b]",
+                isExpired && "bg-[#fef2f2] text-[#ef4444]",
+              )}
+            >
+              <span
+                className={cn(
+                  "w-2 h-2 rounded-full",
+                  isLive && "bg-[#22c55e]",
+                  isPending && "bg-[#e8b86d]",
+                  isExpired && "bg-[#ef4444]",
+                )}
+              />
+              {isLive && "Currently live"}
+              {isPending && "Scheduled — not yet live"}
+              {isExpired && "Expired — no longer visible"}
+            </div>
+          );
+        })()}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Priority panel (collapsible)
+───────────────────────────────────────────── */
+
+type PriorityMode = "none" | "animate" | "redirect";
+type AnimationType = "buzz" | "wobble" | "pop" | "swipe";
+
+const ANIMATION_OPTIONS: { type: AnimationType; label: string }[] = [
+  { type: "buzz", label: "BUZZ" },
+  { type: "wobble", label: "WOBBLE" },
+  { type: "pop", label: "POP" },
+  { type: "swipe", label: "SWIPE" },
+];
+
+function PriorityPanel({
+  link,
+  onUpdate,
+}: {
+  link: BioLink;
+  onUpdate: (id: string, data: Partial<BioLink>) => void;
+}) {
+  const mode = link.prioritize ?? "none";
+  const anim = link.animationType ?? "buzz";
+
+  const selectMode = (m: PriorityMode) => {
+    if (m === "none") {
+      onUpdate(link.id, { prioritize: "none", animationType: "buzz", redirectUntil: null });
+    } else if (m === "animate") {
+      onUpdate(link.id, { prioritize: "animate", redirectUntil: null });
+    } else {
+      onUpdate(link.id, { prioritize: "redirect" });
+    }
+  };
+
+  return (
+    <div className="px-4 pb-4 pt-1">
+      <div className="bg-[#faf8fc] rounded-[12px] p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-semibold text-[#1a1a2e]">Prioritize</span>
+          {mode !== "none" && (
+            <button
+              onClick={() => selectMode("none")}
+              className="text-[11px] text-[#ef4444] hover:text-[#dc2626] font-medium transition-colors"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+
+        <p className="text-[10px] text-[#8a8a9a] leading-snug">
+          Draw attention or even redirect traffic to your most important link. Only one link can be prioritized at a time.
+        </p>
+
+        <div className="space-y-2">
+          {/* Animate */}
+          <div>
+            <button
+              onClick={() => selectMode("animate")}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] border text-left transition-all",
+                mode === "animate"
+                  ? "border-[#1a1a2e] border-2 bg-white"
+                  : "border-[#e8e6e2] bg-white hover:border-[#d0cec8]"
+              )}
+            >
+              <div className={cn(
+                "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                mode === "animate" ? "border-[#1a1a2e]" : "border-[#d0cec8]"
+              )}>
+                {mode === "animate" && <div className="w-2.5 h-2.5 rounded-full bg-[#1a1a2e]" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-[#1a1a2e]">Animate</div>
+                <div className="text-[10px] text-[#8a8a9a]">Apply a fun and engaging motion effect to this link.</div>
+              </div>
+              <Zap size={16} className={mode === "animate" ? "text-[#e8b86d]" : "text-[#d0cec8]"} />
+            </button>
+
+            {/* Animation type picker */}
+            {mode === "animate" && (
+              <div className="flex gap-2 mt-2 ml-8">
+                {ANIMATION_OPTIONS.map(({ type, label }) => (
+                  <button
+                    key={type}
+                    onClick={() => onUpdate(link.id, { animationType: type })}
+                    className={cn(
+                      "flex-1 py-2 rounded-[10px] border text-[11px] font-bold tracking-wide transition-all",
+                      anim === type
+                        ? "border-[#1a1a2e] border-2 bg-white text-[#1a1a2e]"
+                        : "border-[#e8e6e2] bg-white text-[#8a8a9a] hover:border-[#d0cec8]"
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Redirect */}
+          <div>
+            <button
+              onClick={() => selectMode("redirect")}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] border text-left transition-all",
+                mode === "redirect"
+                  ? "border-[#1a1a2e] border-2 bg-white"
+                  : "border-[#e8e6e2] bg-white hover:border-[#d0cec8]"
+              )}
+            >
+              <div className={cn(
+                "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                mode === "redirect" ? "border-[#1a1a2e]" : "border-[#d0cec8]"
+              )}>
+                {mode === "redirect" && <div className="w-2.5 h-2.5 rounded-full bg-[#1a1a2e]" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-[#1a1a2e]">Redirect</div>
+                <div className="text-[10px] text-[#8a8a9a]">Temporarily send all visitors straight to this link instead of your bio page.</div>
+              </div>
+              <ArrowRight size={16} className={mode === "redirect" ? "text-[#e8b86d]" : "text-[#d0cec8]"} />
+            </button>
+
+            {/* Redirect until date */}
+            {mode === "redirect" && (
+              <div className="mt-2 ml-8 space-y-1">
+                <label className="text-[11px] font-semibold text-[#1a1a2e]">
+                  Active until <span className="text-[10px] font-normal text-[#8a8a9a]">(optional)</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={toLocalDatetime(link.redirectUntil)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    onUpdate(link.id, { redirectUntil: val ? new Date(val).toISOString() : null });
+                  }}
+                  className="w-full px-3 py-2 border border-[#e8e6e2] rounded-[8px] text-[12px] outline-none focus:border-[#e8b86d] transition-colors bg-white"
+                />
+                {link.redirectUntil && (
+                  <p className="text-[10px] text-[#8a8a9a]">
+                    <CalendarClock size={10} className="inline mr-1 opacity-60" />
+                    Redirects until: {formatDateLabel(link.redirectUntil)}
+                  </p>
+                )}
+                {!link.redirectUntil && (
+                  <p className="text-[10px] text-[#8a8a9a] italic">No end date — redirect stays active until removed.</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Don't prioritize */}
+          <button
+            onClick={() => selectMode("none")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] border text-left transition-all",
+              mode === "none"
+                ? "border-[#1a1a2e] border-2 bg-white"
+                : "border-[#e8e6e2] bg-white hover:border-[#d0cec8]"
+            )}
+          >
+            <div className={cn(
+              "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+              mode === "none" ? "border-[#1a1a2e]" : "border-[#d0cec8]"
+            )}>
+              {mode === "none" && <div className="w-2.5 h-2.5 rounded-full bg-[#1a1a2e]" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold text-[#1a1a2e]">Don&apos;t prioritize this link</div>
+            </div>
+            <MinusCircle size={16} className={mode === "none" ? "text-[#8a8a9a]" : "text-[#d0cec8]"} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
    Mini stats panel (collapsible)
 ───────────────────────────────────────────── */
 
@@ -563,6 +981,13 @@ function SortableLinkCard({
   const [statsOpen, setStatsOpen] = useState(false);
   const [thumbnailOpen, setThumbnailOpen] = useState(false);
   const [lockOpen, setLockOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [layoutOpen, setLayoutOpen] = useState(false);
+  const [priorityOpen, setPriorityOpen] = useState(false);
+
+  const linkUrl = link.url || link.fallbackUrl || "";
+  const hasValidUrl = linkUrl ? isValidUrl(linkUrl.startsWith("http") ? linkUrl : "https://" + linkUrl) : false;
+  const isComplete = !!link.title.trim() && hasValidUrl;
 
   const {
     attributes,
@@ -612,10 +1037,23 @@ function SortableLinkCard({
             placeholder="Link title"
           />
           <InlineEdit
-            value={link.slug}
-            onSave={(val) => onUpdate(link.id, { slug: val.toLowerCase().replace(/[^a-z0-9-]/g, "") })}
+            value={link.url || link.fallbackUrl || ""}
+            onSave={(val) => {
+              let url = val.trim();
+              if (url && !url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "https://" + url;
+              }
+              onUpdate(link.id, { url, fallbackUrl: url });
+            }}
+            validate={(val) => {
+              let url = val;
+              if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "https://" + url;
+              }
+              return isValidUrl(url) ? "" : "Please enter a valid URL";
+            }}
             className="text-[12px] text-[#8a8a9a] font-mono"
-            placeholder="slug"
+            placeholder="https://..."
           />
         </div>
 
@@ -624,12 +1062,26 @@ function SortableLinkCard({
           <button className="w-7 h-7 rounded-[6px] border border-[#e8e6e2] bg-white flex items-center justify-center text-[#8a8a9a] hover:border-[#8a8a9a] hover:text-[#1a1a2e] transition-all">
             <Share2 size={12} />
           </button>
-          <Toggle on={link.isVisible} onToggle={() => onToggle(link.id)} />
+          <Toggle on={link.isVisible} onToggle={() => onToggle(link.id)} disabled={!isComplete} />
         </div>
       </div>
 
       {/* Bottom row */}
       <div className="flex items-center px-4 pb-3.5 pt-2 gap-2">
+        <button
+          onClick={() => setLayoutOpen(!layoutOpen)}
+          title="Layout"
+          className={cn(
+            "w-[30px] h-[30px] rounded-[8px] border flex items-center justify-center transition-all duration-150 flex-shrink-0",
+            layoutOpen
+              ? "border-[#e8b86d] bg-[#faeeda] text-[#b8860b]"
+              : link.layout === "featured"
+                ? "border-[#e8b86d] bg-white text-[#b8860b] hover:bg-[#faeeda]"
+                : "border-[#f0eeea] bg-white text-[#8a8a9a] hover:bg-[#f0eeea] hover:text-[#1a1a2e]"
+          )}
+        >
+          <LayoutGrid size={15} />
+        </button>
         <IconBtn icon={QrCode} title="QR code" />
         <button
           onClick={() => setThumbnailOpen(!thumbnailOpen)}
@@ -645,8 +1097,34 @@ function SortableLinkCard({
         >
           <ImageIcon size={15} />
         </button>
-        <IconBtn icon={Star} title="Priority" />
-        <IconBtn icon={Clock} title="Schedule" />
+        <button
+          onClick={() => setPriorityOpen(!priorityOpen)}
+          title="Priority"
+          className={cn(
+            "w-[30px] h-[30px] rounded-[8px] border flex items-center justify-center transition-all duration-150 flex-shrink-0",
+            priorityOpen
+              ? "border-[#e8b86d] bg-[#faeeda] text-[#b8860b]"
+              : link.prioritize && link.prioritize !== "none"
+                ? "border-[#e8b86d] bg-white text-[#b8860b] hover:bg-[#faeeda]"
+                : "border-[#f0eeea] bg-white text-[#8a8a9a] hover:bg-[#f0eeea] hover:text-[#1a1a2e]"
+          )}
+        >
+          <Star size={15} />
+        </button>
+        <button
+          onClick={() => setScheduleOpen(!scheduleOpen)}
+          title="Schedule"
+          className={cn(
+            "w-[30px] h-[30px] rounded-[8px] border flex items-center justify-center transition-all duration-150 flex-shrink-0",
+            scheduleOpen
+              ? "border-[#e8b86d] bg-[#faeeda] text-[#b8860b]"
+              : link.scheduleStart
+                ? "border-[#e8b86d] bg-white text-[#b8860b] hover:bg-[#faeeda]"
+                : "border-[#f0eeea] bg-white text-[#8a8a9a] hover:bg-[#f0eeea] hover:text-[#1a1a2e]"
+          )}
+        >
+          <Clock size={15} />
+        </button>
         <button
           onClick={() => setLockOpen(!lockOpen)}
           title="Lock"
@@ -682,11 +1160,20 @@ function SortableLinkCard({
         </div>
       </div>
 
+      {/* Collapsible layout */}
+      {layoutOpen && <LayoutPanel link={link} onUpdate={onUpdate} />}
+
       {/* Collapsible thumbnail */}
       {thumbnailOpen && <ThumbnailPanel link={link} onUpdate={onUpdate} />}
 
+      {/* Collapsible priority */}
+      {priorityOpen && <PriorityPanel link={link} onUpdate={onUpdate} />}
+
       {/* Collapsible lock */}
       {lockOpen && <LockPanel link={link} onUpdate={onUpdate} />}
+
+      {/* Collapsible schedule */}
+      {scheduleOpen && <SchedulePanel link={link} onUpdate={onUpdate} />}
 
       {/* Collapsible stats */}
       {statsOpen && <StatsPanel link={link} />}
@@ -724,12 +1211,13 @@ export function BioLinksEditor() {
   );
 
   const handleAddLink = (name: string) => {
-    const slug = name.toLowerCase().replace(/[\s/]/g, "");
-    const platform = getPlatformIcon(name);
+    const platform = findPlatform(name);
     addLink({
       title: name,
-      slug,
-      icon: platform ? name.toLowerCase() : "",
+      slug: platform?.slug ?? name.toLowerCase().replace(/[\s/]/g, "-"),
+      url: platform?.urlPrefix ?? "",
+      fallbackUrl: platform?.urlPrefix ?? "",
+      icon: platform?.slug ?? "",
     });
     setShowPopup(false);
   };

@@ -62,3 +62,18 @@ export function faviconUrl(url: string): string {
     return "";
   }
 }
+
+/**
+ * Remove undefined values from an object (required for Firestore).
+ * It does not remove nulls, as those are valid Firestore values.
+ */
+export function cleanData<T extends object>(obj: T): T {
+  const result = { ...obj };
+  Object.keys(result).forEach((key) => {
+    if ((result as any)[key] === undefined) {
+      delete (result as any)[key];
+    }
+  });
+  return result;
+}
+
