@@ -10,6 +10,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { mergeCountryCounts } from "@/lib/country";
 import { useAuth } from "./useAuth";
 
 // ── Types ──────────────────────────────────────────
@@ -21,6 +22,7 @@ export interface DailyStats {
   androidClicks: number;
   desktopClicks: number;
   links?: Record<string, number>;
+  countries?: Record<string, number>;
   referrers?: Record<string, number>;
 }
 
@@ -86,11 +88,12 @@ export function useAnalytics(): AnalyticsSummary {
           const s = d.data();
           return {
             date: d.id,
-            clicks: s.clicks ?? 0,
+            clicks: s.clicks ?? s.totalClicks ?? 0,
             iosClicks: s.iosClicks ?? 0,
             androidClicks: s.androidClicks ?? 0,
             desktopClicks: s.desktopClicks ?? 0,
             links: s.links,
+            countries: s.countries,
             referrers: s.referrers,
           };
         });
@@ -107,8 +110,12 @@ export function useAnalytics(): AnalyticsSummary {
           .slice(0, 8)
           .map(([name, clicks]) => ({ name, clicks }));
 
-        // Countries from bio page totals field
-        const countryMap: Record<string, number> = bioData.countriesTotal ?? {};
+        // Countries: merge daily stats + legacy totals fields
+        const countryMap = mergeCountryCounts(
+          ...daily.map((d) => d.countries),
+          bioData.countriesTotal as Record<string, number> | undefined,
+          bioData.viewCountriesTotal as Record<string, number> | undefined
+        );
         const topCountries = Object.entries(countryMap)
           .sort((a, b) => b[1] - a[1])
           .slice(0, 10)

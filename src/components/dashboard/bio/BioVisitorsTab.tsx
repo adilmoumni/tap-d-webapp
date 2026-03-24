@@ -3,8 +3,15 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getBioDailyStats, getRecentBioVisitors } from "@/lib/db/bio-analytics";
+import {
+  countryDisplayName,
+  countryFlagEmoji,
+  mergeCountryCounts,
+  normalizeCountryCode,
+  UNKNOWN_COUNTRY,
+} from "@/lib/country";
 import type { BioVisitStats, BioVisitorDoc } from "@/types/bio";
-import { Smartphone, Monitor, Tablet, Globe, ExternalLink, Users, TrendingUp, MapPin, Loader2 } from "lucide-react";
+import { Smartphone, Monitor, Tablet, ExternalLink, Users, TrendingUp, MapPin, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* ── helpers ── */
@@ -19,13 +26,6 @@ function timeAgo(iso: string | null): string {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   return `${d}d ago`;
-}
-
-function countryFlag(code: string | null): string {
-  if (!code || code.length !== 2) return "🌍";
-  return String.fromCodePoint(
-    ...[...code.toUpperCase()].map((c) => 0x1F1E6 + c.charCodeAt(0) - 65)
-  );
 }
 
 const DEVICE_ICON: Record<"ios" | "android" | "desktop", React.ElementType> = {
@@ -61,7 +61,17 @@ function KpiCard({ label, value, icon: Icon, sub }: { label: string; value: stri
   );
 }
 
-function TopTable({ data, label, emptyMsg }: { data: Record<string, number>; label: string; emptyMsg?: string }) {
+function TopTable({
+  data,
+  label,
+  emptyMsg,
+  formatLabel,
+}: {
+  data: Record<string, number>;
+  label: string;
+  emptyMsg?: string;
+  formatLabel?: (key: string) => string;
+}) {
   const rows = useMemo(
     () => Object.entries(data).sort((a, b) => b[1] - a[1]).slice(0, 8),
     [data]
@@ -77,8 +87,11 @@ function TopTable({ data, label, emptyMsg }: { data: Record<string, number>; lab
         <div className="space-y-2">
           {rows.map(([key, count]) => (
             <div key={key} className="flex items-center gap-3">
-              <span className="w-28 text-[12px] text-[#1a1a2e] truncate flex-shrink-0 font-mono">
-                {key.replace(/_/g, ".")}
+              <span className={cn(
+                "w-28 text-[12px] text-[#1a1a2e] truncate flex-shrink-0",
+                formatLabel ? "font-medium" : "font-mono"
+              )}>
+                {formatLabel ? formatLabel(key) : key.replace(/_/g, ".")}
               </span>
               <div className="flex-1 h-1.5 bg-[#f0eeea] rounded-full overflow-hidden">
                 <div
@@ -132,10 +145,18 @@ export function BioVisitorsTab() {
   );
 
   const allCountries = useMemo(() =>
-    stats.reduce<Record<string, number>>((acc, s) => {
-      for (const [k, v] of Object.entries(s.countries)) acc[k] = (acc[k] ?? 0) + v;
-      return acc;
-    }, {}), [stats]
+    mergeCountryCounts(...stats.map((s) => s.countries)),
+    [stats]
+  );
+
+  const countriesForDisplay = useMemo(
+    () => ({ ...allCountries, [UNKNOWN_COUNTRY]: allCountries[UNKNOWN_COUNTRY] ?? 0 }),
+    [allCountries]
+  );
+
+  const countryCount = useMemo(
+    () => Object.keys(allCountries).filter((k) => normalizeCountryCode(k) !== UNKNOWN_COUNTRY).length,
+    [allCountries]
   );
 
   const allReferrers = useMemo(() =>
@@ -145,11 +166,13 @@ export function BioVisitorsTab() {
     }, {}), [stats]
   );
 
-  const topCountries = useMemo(
-    () => Object.entries(allCountries).sort((a, b) => b[1] - a[1]).slice(0, 1),
+  const topCountryCode = useMemo(
+    () =>
+      Object.entries(allCountries)
+        .filter(([code]) => normalizeCountryCode(code) !== UNKNOWN_COUNTRY)
+        .sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
     [allCountries]
   );
-  const topCountryCode = topCountries[0]?.[0] ?? null;
 
   const maxViews   = useMemo(() => Math.max(1, ...stats.map((s) => s.totalViews)), [stats]);
 
@@ -188,9 +211,9 @@ export function BioVisitorsTab() {
         />
         <KpiCard
           label="Countries"
-          value={Object.keys(allCountries).length}
+          value={countryCount}
           icon={MapPin}
-          sub={topCountryCode ? `Top: ${countryFlag(topCountryCode)} ${topCountryCode}` : "No data yet"}
+          sub={topCountryCode ? `Top: ${countryFlagEmoji(topCountryCode)} ${countryDisplayName(topCountryCode)}` : "No data yet"}
         />
         <KpiCard
           label="Top device"
@@ -284,7 +307,12 @@ export function BioVisitorsTab() {
 
       {/* ── Countries & Referrers ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <TopTable data={allCountries} label="Top countries" emptyMsg="No country data yet." />
+        <TopTable
+          data={countriesForDisplay}
+          label="Top countries"
+          emptyMsg="No country data yet."
+          formatLabel={countryDisplayName}
+        />
         <TopTable data={allReferrers} label="Top referrers" emptyMsg="No referrer data yet." />
       </div>
 
@@ -310,8 +338,11 @@ export function BioVisitorsTab() {
                   </div>
 
                   {/* flag + country */}
-                  <span className="text-[14px] flex-shrink-0" title={v.country ?? "Unknown"}>
-                    {countryFlag(v.country)}
+                  <span className="text-[14px] flex-shrink-0" title={countryDisplayName(v.country)}>
+                    {countryFlagEmoji(v.country)}
+                  </span>
+                  <span className="w-20 text-[11px] text-[#8a8a9a] truncate flex-shrink-0">
+                    {countryDisplayName(v.country)}
                   </span>
 
                   {/* referrer */}

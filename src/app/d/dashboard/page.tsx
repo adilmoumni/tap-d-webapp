@@ -3,6 +3,7 @@
 import { useDashboard } from "@/contexts/DashboardContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/hooks/useAuth";
+import { countryDisplayName, normalizeCountryCode, UNKNOWN_COUNTRY } from "@/lib/country";
 
 /* ─────────────────────────────────────────────
    Shared primitives
@@ -292,6 +293,11 @@ function ReferrersPanel() {
 
 function CountriesPanel() {
   const analytics = useAnalytics();
+  const countries = [...analytics.topCountries];
+  if (!countries.some((c) => normalizeCountryCode(c.name) === UNKNOWN_COUNTRY)) {
+    countries.push({ name: UNKNOWN_COUNTRY, clicks: 0 });
+  }
+  countries.sort((a, b) => b.clicks - a.clicks);
 
   return (
     <>
@@ -303,15 +309,15 @@ function CountriesPanel() {
           <div className="space-y-2">
             {[1, 2, 3, 4].map((i) => <Skeleton key={i} h={28} />)}
           </div>
-        ) : analytics.topCountries.length === 0 ? (
+        ) : countries.length === 0 ? (
           <p className="text-[11px] text-[#8a8a9a] text-center py-4">No country data yet.</p>
         ) : (
-          analytics.topCountries.map((c, i) => (
+          countries.map((c, i) => (
             <ListRow
               key={c.name}
-              left={c.name}
+              left={countryDisplayName(c.name)}
               right={c.clicks}
-              last={i === analytics.topCountries.length - 1}
+              last={i === countries.length - 1}
             />
           ))
         )}

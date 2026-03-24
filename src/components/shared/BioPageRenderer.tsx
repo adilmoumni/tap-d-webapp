@@ -208,24 +208,13 @@ const ANIM_MAP: Record<string, string> = {
 
 /* ── Component ── */
 
-import { logBioView, logBioClick } from "@/lib/db/bio-analytics";
+import { logBioClick } from "@/lib/db/bio-analytics";
 
 /* ── Click tracker (fire-and-forget) ── */
 
 function trackClick(slug: string, linkId: string, bioId?: string) {
   if (typeof window === "undefined" || !bioId) return;
   logBioClick(bioId, linkId).catch(() => {});
-}
-
-/* ── View tracker (fire-and-forget, once per session per bio) ── */
-
-function trackView(slug: string, bioId?: string) {
-  if (typeof window === "undefined" || !bioId) return;
-  const key = `viewed_bio_${bioId}`;
-  if (sessionStorage.getItem(key)) return; // Only log once per session
-  sessionStorage.setItem(key, "1");
-
-  logBioView(bioId, "" /* ownerId placeholder */).catch(() => {});
 }
 
 interface BioPageRendererProps {
@@ -251,14 +240,6 @@ export function BioPageRenderer({
   const hasAnimations = (data.links ?? []).some(
     (l) => l.isVisible && l.prioritize === "animate"
   );
-
-  // Track page view
-  useEffect(() => {
-    if (isPublic) {
-      const bioId = (data as any).id;
-      trackView(data.slug, bioId);
-    }
-  }, [isPublic, data.slug, data]);
 
   useEffect(() => {
     if (!isPublic) return;

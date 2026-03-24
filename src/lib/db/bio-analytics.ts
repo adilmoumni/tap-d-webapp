@@ -24,6 +24,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { normalizeCountryCode, UNKNOWN_COUNTRY } from "@/lib/country";
 import type { BioVisitorDoc, BioVisitStats } from "@/types/bio";
 
 /** Sanitise a string for use as a Firestore field key (no dots / special chars). */
@@ -67,14 +68,14 @@ export async function logBioView(bioId: string, ownerId: string): Promise<void> 
     // Fire country lookup in parallel — non-blocking for the main write
     const countryPromise = fetchCountry();
 
-    const country = await countryPromise;
+    const country = normalizeCountryCode(await countryPromise);
 
     // 1. Raw view event
     await addDoc(collection(db, "views"), {
       bioId,
       ownerId,
       device,
-      country: country ?? null,
+      country: country === UNKNOWN_COUNTRY ? null : country,
       referrer,
       createdAt: serverTimestamp(),
     });
@@ -91,10 +92,8 @@ export async function logBioView(bioId: string, ownerId: string): Promise<void> 
     const aggregates: Record<string, ReturnType<typeof increment>> = {
       totalViews: increment(1),
       [deviceField]: increment(1),
+      [`countries.${toFieldKey(country)}`]: increment(1),
     };
-    if (country) {
-      aggregates[`countries.${toFieldKey(country)}`] = increment(1);
-    }
     if (referrer && referrer !== "direct") {
       aggregates[`referrers.${toFieldKey(referrer)}`] = increment(1);
     }
@@ -153,7 +152,7 @@ export async function logBioClick(
 ): Promise<void> {
   try {
     const device = detectDevice();
-    const country = await fetchCountry();
+    const country = normalizeCountryCode(await fetchCountry());
     const referrer = typeof document !== "undefined"
       ? (document.referrer
           ? new URL(document.referrer).hostname.replace(/^www\./, "")
@@ -166,7 +165,7 @@ export async function logBioClick(
       linkId,
       ownerId: ownerId ?? null,
       device,
-      country: country ?? null,
+      country: country === UNKNOWN_COUNTRY ? null : country,
       referrer,
       createdAt: serverTimestamp(),
     });
@@ -185,11 +184,9 @@ export async function logBioClick(
       totalClicks: increment(1),
       [deviceField]: increment(1),
       [`links.${linkId}`]: increment(1),
+      [`countries.${toFieldKey(country)}`]: increment(1),
     };
 
-    if (country) {
-      statsAggregates[`countries.${toFieldKey(country)}`] = increment(1);
-    }
     if (referrer && referrer !== "direct") {
       statsAggregates[`referrers.${toFieldKey(referrer)}`] = increment(1);
     }
@@ -201,7 +198,7 @@ export async function logBioClick(
     await setDoc(linkRef, {
       clicks: increment(1),
       [deviceField]: increment(1),
-      ...(country ? { [`countries.${toFieldKey(country)}`]: increment(1) } : {})
+      [`countries.${toFieldKey(country)}`]: increment(1),
     }, { merge: true });
 
     // 3. Overall bio page totals
@@ -209,7 +206,8 @@ export async function logBioClick(
     await setDoc(bioRef, {
       totalClicks: increment(1),
       [`${deviceField}Total`]: increment(1),
-      ...(country ? { [`viewCountriesTotal.${toFieldKey(country)}`]: increment(1) } : {})
+      [`viewCountriesTotal.${toFieldKey(country)}`]: increment(1),
+      [`countriesTotal.${toFieldKey(country)}`]: increment(1),
     }, { merge: true });
 
   } catch (err) {
@@ -230,12 +228,13 @@ export async function getRecentBioVisitors(
   const snap = await getDocs(q);
   return snap.docs.map((d) => {
     const data = d.data();
+    const normalizedCountry = normalizeCountryCode(data.country ?? null);
     return {
       id:        d.id,
       bioId:     data.bioId,
       ownerId:   data.ownerId,
       device:    data.device,
-      country:   data.country ?? null,
+      country:   normalizedCountry === UNKNOWN_COUNTRY ? null : normalizedCountry,
       referrer:  data.referrer ?? "direct",
       createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
     } as BioVisitorDoc;
