@@ -9,8 +9,24 @@ import { useAuth } from "@/hooks/useAuth";
 import type { BioLink } from "@/types/bio";
 import { cn } from "@/lib/utils";
 import { QRPreview } from "@/components/dashboard/qr/QRPreview";
+import { normalizeOutboundUrl } from "@/lib/url-safety";
 
-const RESERVED = new Set(["dashboard", "login", "signup", "api", "settings", "pricing", "bio", "b", "d", "_next"]);
+const RESERVED = new Set([
+  "dashboard",
+  "login",
+  "signup",
+  "api",
+  "settings",
+  "pricing",
+  "privacy",
+  "terms",
+  "legal",
+  "out",
+  "bio",
+  "b",
+  "d",
+  "_next",
+]);
 
 const PLATFORM_PRESETS: Record<string, { 
   smart: boolean, 
@@ -144,12 +160,23 @@ export function SmartLinkForm({
     if (slugState === "checking" || slugState === "taken" || slugState === "invalid") return;
     if (!title.trim() || !slug.trim() || !fallbackUrl.trim()) return;
 
-    try {
-      new URL(fallbackUrl);
-      if (isSmart && iosUrl) new URL(iosUrl);
-      if (isSmart && androidUrl) new URL(androidUrl);
-    } catch {
-      alert("Please ensure all provided URLs are valid (e.g., https://...)");
+    const normalizedFallback = normalizeOutboundUrl(fallbackUrl, { allowRelative: true });
+    const normalizedIos = (isSmart && iosUrl ? normalizeOutboundUrl(iosUrl, { allowRelative: true }) : "") ?? "";
+    const normalizedAndroid =
+      (isSmart && androidUrl ? normalizeOutboundUrl(androidUrl, { allowRelative: true }) : "") ?? "";
+
+    if (!normalizedFallback) {
+      alert("Please enter a valid fallback URL (http/https).");
+      return;
+    }
+
+    if (isSmart && iosUrl && !normalizedIos) {
+      alert("Please enter a valid iOS URL (http/https).");
+      return;
+    }
+
+    if (isSmart && androidUrl && !normalizedAndroid) {
+      alert("Please enter a valid Android URL (http/https).");
       return;
     }
 
@@ -170,11 +197,11 @@ export function SmartLinkForm({
         uid: profile?.uid || "",
         title: title.trim(),
         slug: slug.trim(),
-        url: fallbackUrl.trim(),
-        fallbackUrl: fallbackUrl.trim(),
+        url: normalizedFallback,
+        fallbackUrl: normalizedFallback,
         isSmart,
-        iosUrl: isSmart ? iosUrl.trim() : "",
-        androidUrl: isSmart ? androidUrl.trim() : "",
+        iosUrl: isSmart ? normalizedIos : "",
+        androidUrl: isSmart ? normalizedAndroid : "",
         icon,
         thumbnailUrl: thumbnailUrl || null,
         isVisible: initialData?.isVisible ?? true,

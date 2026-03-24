@@ -1,25 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { detectDevice, getRedirectUrl } from "@/lib/device";
 import { logClickClient } from "@/lib/db-client";
 import { Logo } from "@/components/shared/Logo";
+import { buildSafeOutgoingHref, normalizeOutboundUrl } from "@/lib/url-safety";
 
 export default function RedirectClient() {
-  const [slug, setSlug] = useState<string | null>(null);
+  const pathname = usePathname();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const path = window.location.pathname;
-      const currentSlug = path.split("/").pop() || "";
-      setSlug(currentSlug);
-    }
-  }, []);
+  const slug = useMemo(() => {
+    if (!pathname) return null;
+    return pathname.split("/").pop() || null;
+  }, [pathname]);
 
   useEffect(() => {
     if (!slug) return;
@@ -57,22 +55,27 @@ export default function RedirectClient() {
           referrer: document.referrer || "direct",
         }).catch((err: unknown) => console.error("Analytics error:", err));
 
-        // Perform redirect
-        if (!targetUrl.startsWith("http")) {
-          if (targetUrl.startsWith("/")) {
-            targetUrl = `${window.location.origin}${targetUrl}`;
-          } else {
-            // If it's something like "google.com", ensure it has https://
-            targetUrl = `https://${targetUrl}`;
-          }
-        }
-        
-        // Final sanity check for malformed internal URLs
-        if (targetUrl.includes("tap-d-link") && !targetUrl.includes(".")) {
-           targetUrl = targetUrl.replace("tap-d-link", "tap-d.link");
+        const normalizedTarget = normalizeOutboundUrl(targetUrl, { allowRelative: true });
+        if (!normalizedTarget) {
+          setError("Destination blocked for safety. Redirecting to home...");
+          setTimeout(() => window.location.replace("/"), 2000);
+          return;
         }
 
-        window.location.replace(targetUrl);
+        const safeHref = buildSafeOutgoingHref(normalizedTarget, {
+          allowRelative: true,
+          origin: window.location.origin,
+          source: "smart",
+          slug,
+        });
+
+        if (!safeHref) {
+          setError("Destination blocked for safety. Redirecting to home...");
+          setTimeout(() => window.location.replace("/"), 2000);
+          return;
+        }
+
+        window.location.replace(safeHref);
       } catch (err: unknown) {
         console.error("Redirect error:", err);
         setError("Something went wrong. Redirecting to home...");
@@ -94,7 +97,7 @@ export default function RedirectClient() {
       ) : (
         <div className="space-y-4">
           <h1 className="text-2xl font-bold text-text-primary">Redirecting you...</h1>
-          <p className="text-text-muted">Just a moment, we're taking you to your destination.</p>
+          <p className="text-text-muted">Just a moment, we&apos;re taking you to your destination.</p>
           <div className="flex justify-center gap-1.5 mt-4">
             <span className="w-2.5 h-2.5 rounded-full bg-lavender animate-bounce [animation-delay:-0.3s]" />
             <span className="w-2.5 h-2.5 rounded-full bg-lavender animate-bounce [animation-delay:-0.15s]" />

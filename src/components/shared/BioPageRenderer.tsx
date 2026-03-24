@@ -5,6 +5,8 @@ import Image from "next/image";
 import type { BioPageData, BioTheme, BioLink } from "@/types/bio";
 import { findPlatform } from "@/lib/platforms";
 import { motion } from "framer-motion";
+import { logBioClick } from "@/lib/db/bio-analytics";
+import { buildSafeOutgoingHref } from "@/lib/url-safety";
 
 /* ─────────────────────────────────────────────
    BioPageRenderer — the definitive renderer.
@@ -208,13 +210,20 @@ const ANIM_MAP: Record<string, string> = {
 
 /* ── Component ── */
 
-import { logBioClick } from "@/lib/db/bio-analytics";
-
 /* ── Click tracker (fire-and-forget) ── */
 
 function trackClick(slug: string, linkId: string, bioId?: string) {
   if (typeof window === "undefined" || !bioId) return;
   logBioClick(bioId, linkId).catch(() => {});
+}
+
+function resolvePublicHref(raw: string, source: string, slug?: string): string | null {
+  return buildSafeOutgoingHref(raw, {
+    allowRelative: true,
+    origin: typeof window !== "undefined" ? window.location.origin : undefined,
+    source,
+    slug,
+  });
 }
 
 interface BioPageRendererProps {
@@ -251,7 +260,7 @@ export function BioPageRenderer({
       return true; // no end date = always active
     });
     if (redirectLink) {
-      const href = redirectLink.fallbackUrl || redirectLink.url;
+      const href = resolvePublicHref(redirectLink.fallbackUrl || redirectLink.url, "priority", data.slug);
       if (href) {
         trackClick(data.slug, redirectLink.id);
         window.location.href = href;
@@ -474,11 +483,12 @@ export function BioPageRenderer({
           {data.socialLinks.map((s) => {
             const plat = findPlatform(s.platform);
             const iconSize = parseInt(sizes.socialSize) * 0.5;
+            const socialHref = isPublic ? resolvePublicHref(s.url, "social", data.slug) : null;
             return (
               <a
                 key={s.platform}
-                href={isPublic ? s.url : undefined}
-                target={isPublic ? "_blank" : undefined}
+                href={isPublic ? socialHref ?? undefined : undefined}
+                target={isPublic && socialHref ? "_blank" : undefined}
                 rel="noopener noreferrer"
                 className="rounded-full flex items-center justify-center font-bold transition-transform hover:scale-105 overflow-hidden"
                 style={{
@@ -638,7 +648,7 @@ function LockModal({
       if (input === link.lockPassword) {
         onUnlock();
       } else {
-        setError("Incorrect password. Please try again.");
+        setError("Incorrect access phrase. Please try again.");
         setInput("");
       }
     }
@@ -672,7 +682,8 @@ function LockModal({
           <h3 className="text-[16px] font-bold">{link.title}</h3>
           <p className="text-[13px] opacity-60 mt-1">
             {lockType === "code" && "Enter the code to access this link."}
-            {lockType === "password" && "Enter the password to access this link."}
+            {lockType === "password" &&
+              "Enter the access phrase to open this link. Never enter your tap-d.link account password here."}
             {lockType === "sensitive" && "This link may contain content that is not appropriate for all audiences."}
           </p>
         </div>
@@ -682,9 +693,9 @@ function LockModal({
           <div className="space-y-2">
             <input
               autoFocus
-              type={lockType === "password" ? "password" : "text"}
+              type="text"
               inputMode={lockType === "code" ? "numeric" : undefined}
-              placeholder={lockType === "code" ? "Enter code" : "Enter password"}
+              placeholder={lockType === "code" ? "Enter code" : "Enter access phrase"}
               value={input}
               onChange={(e) => {
                 setInput(lockType === "code" ? e.target.value.replace(/\D/g, "") : e.target.value);
@@ -770,14 +781,14 @@ function LinkCard({
   const isLocked = isPublic && !unlocked && !!link.lockType && link.lockType !== "none";
 
   // Smart links → device-detect redirect via /slug
-  // Regular links → direct to fallbackUrl in new tab
+  // Regular links → pass through an internal outbound safety screen.
   const href = isPublic
     ? link.isSmart
       ? `/${link.slug}`
-      : link.fallbackUrl || link.url
+      : resolvePublicHref(link.fallbackUrl || link.url, "bio-link", username) ?? undefined
     : undefined;
 
-  const target = isPublic && !link.isSmart ? "_blank" : undefined;
+  const target = isPublic && !link.isSmart && href ? "_blank" : undefined;
   const rel = target ? "noopener noreferrer" : undefined;
 
   const handleClick = (e: React.MouseEvent) => {

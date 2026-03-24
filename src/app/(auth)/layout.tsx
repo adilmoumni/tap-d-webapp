@@ -54,9 +54,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           {/* Minimal Auth Footer */}
           <p className="mt-12 text-xs text-text-muted text-center max-w-[280px]">
             By continuing, you agree to our{" "}
-            <Link href="#" className="text-text-primary font-medium hover:underline">Terms</Link>
+            <Link href="/legal/terms" className="text-text-primary font-medium hover:underline">Terms</Link>
             {" "}and{" "}
-            <Link href="#" className="text-text-primary font-medium hover:underline">Privacy Policy</Link>.
+            <Link href="/legal/privacy" className="text-text-primary font-medium hover:underline">Privacy Policy</Link>.
           </p>
         </div>
 

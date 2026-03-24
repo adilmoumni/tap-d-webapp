@@ -122,6 +122,8 @@ export default function SignupPage() {
       <form onSubmit={handleEmailSignup} className="space-y-4">
         <input
           type="text"
+          name="name"
+          autoComplete="name"
           placeholder="Your name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -131,6 +133,8 @@ export default function SignupPage() {
         />
         <input
           type="email"
+          name="email"
+          autoComplete="email"
           placeholder="Email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -143,6 +147,8 @@ export default function SignupPage() {
             <span className="pl-4 pr-2 text-sm text-text-muted font-mono">tap-d.link/</span>
             <input
               type="text"
+              name="username"
+              autoComplete="username"
               placeholder="your-slug"
               value={slug}
               onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))}
@@ -166,6 +172,8 @@ export default function SignupPage() {
         </div>
         <input
           type="password"
+          name="new-password"
+          autoComplete="new-password"
           placeholder="Password (min 6 characters)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
