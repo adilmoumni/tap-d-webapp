@@ -97,3 +97,27 @@ export interface BioPageData {
   updatedAt: Timestamp;
   createdAt: Timestamp;
 }
+
+/* ── Visitor analytics ── */
+
+/** Raw view event stored in views/{viewId} */
+export interface BioVisitorDoc {
+  id: string;
+  bioId: string;
+  ownerId: string;
+  device: "ios" | "android" | "desktop";
+  country: string | null;
+  referrer: string;         // hostname or "direct"
+  createdAt: string | null; // ISO string after serialization
+}
+
+/** Daily aggregate stored in biopages/{bioId}/stats/{date} */
+export interface BioVisitStats {
+  date: string;             // YYYY-MM-DD
+  totalViews: number;
+  iosViews: number;
+  androidViews: number;
+  desktopViews: number;
+  countries: Record<string, number>;
+  referrers: Record<string, number>;
+}

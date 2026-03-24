@@ -10,14 +10,14 @@ import { cn } from "@/lib/utils";
 
 const navItems: { section: DashboardSection; label: string; icon: React.ElementType; href: string }[] = [
   { section: "analytics", label: "Analytics", icon: BarChart3, href: "/d/dashboard" },
-  { section: "links",     label: "Links",     icon: Link2,     href: "/d/links" },
-  { section: "bio",       label: "Bio",       icon: User,      href: "/d/bio" },
-  { section: "settings",  label: "Settings",  icon: Settings,  href: "/d/settings" },
+  { section: "links", label: "Links", icon: Link2, href: "/d/links" },
+  { section: "bio", label: "Bio", icon: User, href: "/d/bio" },
+  { section: "settings", label: "Settings", icon: Settings, href: "/d/settings" },
 ];
 
 function sectionFromPath(pathname: string): DashboardSection {
-  if (pathname.startsWith("/d/bio"))      return "bio";
-  if (pathname.startsWith("/d/links"))    return "links";
+  if (pathname.startsWith("/d/bio")) return "bio";
+  if (pathname.startsWith("/d/links")) return "links";
   if (pathname.startsWith("/d/settings")) return "settings";
   return "analytics";
 }
@@ -66,9 +66,11 @@ export function IconSidebar() {
       </nav>
 
       {/* User avatar */}
-      <div className="w-8 h-8 rounded-full bg-[#e8b86d] flex items-center justify-center text-xs font-semibold text-[#0a0a0f] cursor-pointer flex-shrink-0">
-        {initial}
-      </div>
+      <Link href="/d/settings">
+        <div className="w-8 h-8 rounded-full bg-[#e8b86d] flex items-center justify-center text-xs font-semibold text-[#0a0a0f] cursor-pointer flex-shrink-0">
+          {initial}
+        </div>
+      </Link>
     </aside>
   );
 }

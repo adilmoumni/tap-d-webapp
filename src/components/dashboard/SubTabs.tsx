@@ -2,7 +2,7 @@
 
 import {
   BarChart3, Smartphone, Globe, ExternalLink,
-  List, QrCode,
+  List, QrCode, Users,
   User, LayoutTemplate, ImageIcon, Type, Square, Palette, AlignJustify,
   CreditCard, KeyRound,
 } from "lucide-react";
@@ -24,7 +24,8 @@ const linksTabs: TabItem[] = [
 ];
 
 const bioContentTabs: TabItem[] = [
-  { id: "links",     label: "Links",     icon: List },
+  { id: "links",    label: "Links",    icon: List },
+  { id: "visitors", label: "Visitors", icon: Users },
 ];
 
 const bioDesignTabs: TabItem[] = [

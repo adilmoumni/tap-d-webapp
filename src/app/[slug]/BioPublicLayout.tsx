@@ -3,15 +3,26 @@
 import { useEffect, useState } from "react";
 import { Share2 } from "lucide-react";
 import { QRPreview } from "@/components/dashboard/qr/QRPreview";
+import { logBioView } from "@/lib/db/bio-analytics";
 
 interface BioPublicLayoutProps {
   children: React.ReactNode;
   slug: string;
+  bioId: string;
+  ownerId: string;
 }
 
-export default function BioPublicLayout({ children, slug }: BioPublicLayoutProps) {
+export default function BioPublicLayout({ children, slug, bioId, ownerId }: BioPublicLayoutProps) {
   const [copied, setCopied] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  // Track bio page view once on mount
+  useEffect(() => {
+    if (bioId && ownerId) {
+      logBioView(bioId, ownerId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bioId, ownerId]);
 
   useEffect(() => {
     const el = document.getElementById("bio-scroll-container");

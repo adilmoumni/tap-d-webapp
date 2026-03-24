@@ -4,6 +4,7 @@ import { useDashboard } from "@/contexts/DashboardContext";
 import { useBioEditor } from "@/contexts/BioEditorContext";
 import { BioLinksEditor } from "@/components/dashboard/bio/BioLinksEditor";
 import { BioDesignEditor } from "@/components/dashboard/bio/design/BioDesignEditor";
+import { BioVisitorsTab } from "@/components/dashboard/bio/BioVisitorsTab";
 import { Loader2 } from "lucide-react";
 
 export default function BioPage() {
@@ -20,6 +21,12 @@ export default function BioPage() {
   }
 
   if (bioMode === "content") {
+    if (activeTab === "visitors") return (
+      <div className="p-4 lg:p-6">
+        <h2 className="text-[15px] font-semibold text-[#1a1a2e] mb-6">Visitors</h2>
+        <BioVisitorsTab />
+      </div>
+    );
     return <BioLinksEditor />;
   }
 

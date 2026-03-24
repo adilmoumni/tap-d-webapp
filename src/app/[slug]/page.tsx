@@ -66,7 +66,7 @@ export default async function DynamicSlugPage({ params }: { params: Promise<{ sl
   }
 
   return (
-    <BioPublicLayout slug={name}>
+    <BioPublicLayout slug={name} bioId={bio.id} ownerId={bio.ownerId}>
       <BioPageRenderer data={bio as any} variant="public" />
     </BioPublicLayout>
   );
