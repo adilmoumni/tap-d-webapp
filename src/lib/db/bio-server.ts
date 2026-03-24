@@ -176,6 +176,7 @@ export interface SmartLinkPlain {
   urlAndroid?: string;
   urlDesktop: string;
   isSmart: boolean;
+  thumbnailUrl?: string | null;
 }
 
 export async function getLinkBySlugServer(slug: string): Promise<SmartLinkPlain | null> {
@@ -197,6 +198,7 @@ export async function getLinkBySlugServer(slug: string): Promise<SmartLinkPlain 
     urlAndroid: data.androidUrl ?? data.urlAndroid,
     urlDesktop: data.fallbackUrl ?? data.urlDesktop ?? data.url ?? "",
     isSmart: data.isSmart ?? false,
+    thumbnailUrl: data.thumbnailUrl ?? null,
   };
 }
 
@@ -246,7 +248,10 @@ export async function getAllPublicUsernames(): Promise<string[]> {
   try {
     const q = query(collection(db, "biopages"), where("isPublic", "==", true));
     const snap = await getDocs(q);
-    return snap.docs.map(d => d.data().slug || d.id);
+    return snap.docs
+      .map((d) => String(d.data().slug || d.id || ""))
+      .map((s) => s.trim())
+      .filter(Boolean);
   } catch (err) {
     console.error("Error fetching usernames for static generation:", err);
     return [];
@@ -255,12 +260,14 @@ export async function getAllPublicUsernames(): Promise<string[]> {
 
 export async function getAllPublicLinks(): Promise<string[]> {
   try {
-    const q = query(collection(db, "links"), where("active", "==", true));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => {
+    const snap = await getDocs(collection(db, "links"));
+    return snap.docs
+      .filter((d) => d.data()?.isActive !== false)
+      .map((d) => {
       const data = d.data();
-      return data.slug || d.id;
-    });
+      return String(data.slug || d.id || "").trim();
+      })
+      .filter(Boolean);
   } catch (err) {
     console.error("Error fetching links for static generation:", err);
     return [];

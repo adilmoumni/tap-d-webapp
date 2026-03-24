@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-// import { getPublicBioUsernames } from "@/lib/db/bio-server";
+import { getAllPublicLinks, getAllPublicUsernames } from "@/lib/db/bio-server";
 
 export const dynamic = "force-static";
 
@@ -14,13 +14,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === "" ? 1 : 0.8,
   }));
 
-  /* 
-     Ideally, we'd fetch all public usernames and add them here.
-     For now, we'll stick to static routes or a small subset if needed.
-     Example:
-     const usernames = await getPublicBioUsernames();
-     const bioRoutes = usernames.map(u => ({ ... }));
-  */
+  let dynamicRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const [usernames, links] = await Promise.all([
+      getAllPublicUsernames(),
+      getAllPublicLinks(),
+    ]);
+    const slugs = Array.from(new Set([...usernames, ...links].map((s) => s.trim()).filter(Boolean)));
+    dynamicRoutes = slugs.map((slug) => ({
+      url: `${baseUrl}/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: "daily" as const,
+      priority: 0.7,
+    }));
+  } catch (err) {
+    console.error("[sitemap] failed to fetch dynamic slugs:", err);
+  }
 
-  return [...routes];
+  return [...routes, ...dynamicRoutes];
 }
