@@ -9,20 +9,25 @@ import { logClickClient } from "@/lib/db-client";
 import { Logo } from "@/components/shared/Logo";
 
 export default function RedirectClient() {
-  const { slug } = useParams();
+  const [slug, setSlug] = useState<string | null>(null);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const currentSlug = Array.isArray(slug) ? slug[0] : slug;
-    if (!currentSlug) return;
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      const currentSlug = path.split("/").pop() || "";
+      setSlug(currentSlug);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!slug) return;
 
     async function handleRedirect() {
-      const currentSlug = (Array.isArray(slug) ? slug[0] : slug) as string;
-      if (!currentSlug) return;
-
+      if (!slug) return;
       try {
-        const linkDocRef = doc(db, "links", currentSlug);
+        const linkDocRef = doc(db, "links", slug);
         const linkSnap = await getDoc(linkDocRef);
 
         if (!linkSnap.exists()) {
@@ -46,7 +51,7 @@ export default function RedirectClient() {
 
         // Track click on the client side
         logClickClient({
-          linkId: currentSlug,
+          linkId: slug,
           uid: data.uid,
           device: platform,
           referrer: document.referrer || "direct",
@@ -54,13 +59,24 @@ export default function RedirectClient() {
 
         // Perform redirect
         if (!targetUrl.startsWith("http")) {
-          targetUrl = targetUrl.startsWith("/") ? targetUrl : `https://${targetUrl}`;
+          if (targetUrl.startsWith("/")) {
+            targetUrl = `${window.location.origin}${targetUrl}`;
+          } else {
+            // If it's something like "google.com", ensure it has https://
+            targetUrl = `https://${targetUrl}`;
+          }
         }
+        
+        // Final sanity check for malformed internal URLs
+        if (targetUrl.includes("tap-d-link") && !targetUrl.includes(".")) {
+           targetUrl = targetUrl.replace("tap-d-link", "tap-d.link");
+        }
+
         window.location.replace(targetUrl);
       } catch (err: unknown) {
         console.error("Redirect error:", err);
         setError("Something went wrong. Redirecting to home...");
-        setTimeout(() => router.replace("/"), 2000);
+        setTimeout(() => window.location.replace("/"), 2000);
       }
     }
 

@@ -31,7 +31,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
       return;
     }
 
-    if (profile && !profile.activeBioId && pathname !== "/claim-username") {
+    if (profile && !profile.username && pathname !== "/claim-username") {
       router.replace("/claim-username");
       return;
     }

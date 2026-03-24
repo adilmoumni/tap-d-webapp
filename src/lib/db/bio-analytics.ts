@@ -142,6 +142,81 @@ export async function getBioDailyStats(
  * Fetch the most recent raw visitor events for a bio page.
  * Requires auth — reads the views/ collection filtered by bioId.
  */
+/**
+ * Log a link click on a bio page.
+ * Writes a raw click event + atomic daily aggregate increments.
+ */
+export async function logBioClick(
+  bioId: string,
+  linkId: string,
+  ownerId?: string
+): Promise<void> {
+  try {
+    const device = detectDevice();
+    const country = await fetchCountry();
+    const referrer = typeof document !== "undefined"
+      ? (document.referrer
+          ? new URL(document.referrer).hostname.replace(/^www\./, "")
+          : "direct")
+      : "direct";
+
+    // 1. Raw click event
+    await addDoc(collection(db, "clicks"), {
+      bioId,
+      linkId,
+      ownerId: ownerId ?? null,
+      device,
+      country: country ?? null,
+      referrer,
+      createdAt: serverTimestamp(),
+    });
+
+    // 2. Daily aggregate in biopages/{bioId}/stats/{date}
+    const today = new Date().toISOString().slice(0, 10);
+    const statsRef = doc(db, "biopages", bioId, "stats", today);
+    const linkRef = doc(db, "biopages", bioId, "links", linkId);
+
+    const deviceField =
+      device === "ios"     ? "iosClicks" :
+      device === "android" ? "androidClicks" :
+                              "desktopClicks";
+
+    const statsAggregates: Record<string, ReturnType<typeof increment>> = {
+      totalClicks: increment(1),
+      [deviceField]: increment(1),
+      [`links.${linkId}`]: increment(1),
+    };
+
+    if (country) {
+      statsAggregates[`countries.${toFieldKey(country)}`] = increment(1);
+    }
+    if (referrer && referrer !== "direct") {
+      statsAggregates[`referrers.${toFieldKey(referrer)}`] = increment(1);
+    }
+
+    // Update daily stats
+    await setDoc(statsRef, statsAggregates, { merge: true });
+
+    // Update link-specific total
+    await setDoc(linkRef, {
+      clicks: increment(1),
+      [deviceField]: increment(1),
+      ...(country ? { [`countries.${toFieldKey(country)}`]: increment(1) } : {})
+    }, { merge: true });
+
+    // 3. Overall bio page totals
+    const bioRef = doc(db, "biopages", bioId);
+    await setDoc(bioRef, {
+      totalClicks: increment(1),
+      [`${deviceField}Total`]: increment(1),
+      ...(country ? { [`viewCountriesTotal.${toFieldKey(country)}`]: increment(1) } : {})
+    }, { merge: true });
+
+  } catch (err) {
+    console.warn("[logBioClick] analytics error:", err);
+  }
+}
+
 export async function getRecentBioVisitors(
   bioId: string,
   maxResults = 50

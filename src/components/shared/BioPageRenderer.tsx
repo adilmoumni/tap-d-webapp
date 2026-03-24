@@ -208,30 +208,24 @@ const ANIM_MAP: Record<string, string> = {
 
 /* ── Component ── */
 
+import { logBioView, logBioClick } from "@/lib/db/bio-analytics";
+
 /* ── Click tracker (fire-and-forget) ── */
 
 function trackClick(slug: string, linkId: string, bioId?: string) {
-  if (typeof window === "undefined") return;
-  fetch("/api/click", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slug, linkId, bioId }),
-  }).catch(() => {});
+  if (typeof window === "undefined" || !bioId) return;
+  logBioClick(bioId, linkId).catch(() => {});
 }
 
 /* ── View tracker (fire-and-forget, once per session per bio) ── */
 
 function trackView(slug: string, bioId?: string) {
-  if (typeof window === "undefined") return;
-  const key = `viewed_bio_${bioId || slug}`;
+  if (typeof window === "undefined" || !bioId) return;
+  const key = `viewed_bio_${bioId}`;
   if (sessionStorage.getItem(key)) return; // Only log once per session
   sessionStorage.setItem(key, "1");
 
-  fetch("/api/view", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slug, bioId }),
-  }).catch(() => {});
+  logBioView(bioId, "" /* ownerId placeholder */).catch(() => {});
 }
 
 interface BioPageRendererProps {

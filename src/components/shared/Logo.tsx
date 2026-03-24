@@ -47,7 +47,7 @@ export function Logo({
   // 'dark' theme means light text on dark background
   // 'light' theme means dark text on light background
   const logoSrc = iconOnly 
-    ? (theme === "dark" ? "/logo/logo-icon-white.svg" : "/logo/logo-icon-dark.svg")
+    ? (theme === "dark" ? "/logo/logo-icon-dark.svg" : "/logo/logo-icon-dark.svg")
     : (theme === "dark" ? "/logo/logo-full-white-text.svg" : "/logo/logo-full-dark-text.svg");
 
   const height = iconOnly ? iconHeightMap[size] : heightMap[size];

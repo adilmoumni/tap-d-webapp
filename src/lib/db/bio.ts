@@ -42,6 +42,19 @@ export async function getBioPageBySlug(slug: string): Promise<(BioPageData & { i
   return { id: d.id, ...d.data() } as BioPageData & { id: string };
 }
 
+export async function getLinkBySlug(slug: string): Promise<any | null> {
+  const snap = await getDoc(doc(db, "links", slug));
+  if (!snap.exists()) return null;
+
+  const data = snap.data();
+  if (data.isActive === false) return null;
+
+  return {
+    id: snap.id,
+    ...data,
+  };
+}
+
 export async function getBioLinks(bioId: string): Promise<BioLink[]> {
   const q = query(
     collection(db, "biopages", bioId, "links"),
