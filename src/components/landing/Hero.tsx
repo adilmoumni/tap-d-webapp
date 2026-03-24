@@ -35,15 +35,15 @@ export function Hero() {
       <div className="relative z-[10] max-w-[820px] mx-auto mb-20 animate-fade-up">
         {/* Heading */}
         <h1 className="font-serif text-[clamp(2.8rem,6vw,4.8rem)] font-medium text-text-on-dark leading-[1.08] tracking-[-0.025em] mb-6">
-          One Link for{" "}
-          <em className="not-italic text-accent-pink">Everything.</em>
+          Smart Short Link &{" "}
+          <em className="not-italic text-accent-pink">Bio Link</em>
           <br />
-          Smart Enough to Know Where.
+          Platform for Every Channel.
         </h1>
 
         {/* Subheading */}
         <p className="text-[clamp(1rem,1.6vw,1.12rem)] text-text-on-dark/55 max-w-[540px] mx-auto mb-10 leading-[1.7]">
-          The link-in-bio for creators who need more. Every link auto-detects devices and sends your audience to the right app store, podcast player, or platform.
+          Build a quick landing page with all your links, create smart links that route by device, and generate QR code links with real-time analytics.
         </p>
 
         {/* CTA button */}

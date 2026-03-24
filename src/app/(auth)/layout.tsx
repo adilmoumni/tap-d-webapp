@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/shared/Logo";
@@ -8,6 +9,18 @@ import { AuthSidebar } from "@/components/auth/AuthSidebar";
    - Left: AuthSidebar (Marketing visuals, hidden on mobile)
    - Right: Active Auth Form (Centered in viewport)
 ------------------------------------------------------------------ */
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
+};
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (

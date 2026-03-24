@@ -6,12 +6,12 @@ export const dynamic = "force-static";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://tap-d.link";
 
-  // Static routes
-  const routes = ["", "/login", "/signup", "/pricing"].map((route) => ({
+  // Public, indexable routes only
+  const routes = ["", "/pricing"].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
-    changeFrequency: "daily" as const,
-    priority: route === "" ? 1 : 0.8,
+    changeFrequency: route === "" ? ("daily" as const) : ("weekly" as const),
+    priority: route === "" ? 1 : 0.9,
   }));
 
   let dynamicRoutes: MetadataRoute.Sitemap = [];
@@ -20,9 +20,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       getAllPublicUsernames(),
       getAllPublicLinks(),
     ]);
-    const slugs = Array.from(new Set([...usernames, ...links].map((s) => s.trim()).filter(Boolean)));
+    const slugs = Array.from(
+      new Set([...usernames, ...links].map((s) => s.trim()).filter(Boolean))
+    );
     dynamicRoutes = slugs.map((slug) => ({
-      url: `${baseUrl}/${slug}`,
+      url: `${baseUrl}/${encodeURIComponent(slug)}`,
       lastModified: new Date(),
       changeFrequency: "daily" as const,
       priority: 0.7,

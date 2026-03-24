@@ -6,15 +6,15 @@ export const siteConfig = {
   name: "tap-d.link",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "https://tap-d.link",
   description:
-    "The smart link-in-bio for creators. One page for all your links — with device detection that sends your audience to the right app store automatically.",
-  tagline: "One Link for Everything. Smart Enough to Know Where.",
+    "Short links, bio link pages, smart links, and QR code links for creators and brands.",
+  tagline: "Short links. Smart routing. One bio link.",
 };
 
 export const navLinks = [
   { label: "For Creators", href: "#bio" },
+  { label: "Smart Links", href: "#how" },
   { label: "Features", href: "#features" },
   { label: "Pricing", href: "#pricing" },
-  { label: "Docs", href: "#docs" },
 ];
 
 export const footerColumns = [

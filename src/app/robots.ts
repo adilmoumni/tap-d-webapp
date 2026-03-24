@@ -7,8 +7,20 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/", "/dashboard/", "/d/"],
+      disallow: [
+        "/api/",
+        "/dashboard",
+        "/dashboard/",
+        "/bio",
+        "/settings",
+        "/links/",
+        "/d/",
+        "/login",
+        "/signup",
+        "/claim-username",
+      ],
     },
     sitemap: "https://tap-d.link/sitemap.xml",
+    host: "https://tap-d.link",
   };
 }
