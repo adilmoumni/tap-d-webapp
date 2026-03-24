@@ -1,8 +1,10 @@
 "use client";
 
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { SmartLink } from "@/types";
+import { QRPreview } from "@/components/dashboard/qr/QRPreview";
 
 /* ------------------------------------------------------------------
    LinkCard — flat horizontal row, matches the dashboard mockup.
@@ -27,6 +29,21 @@ export function LinkCard({ link, onDelete, index = 0 }: LinkCardProps) {
   const appUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://tap-d.link"}/${link.slug}`;
   const iconBg = ICO_COLORS[index % ICO_COLORS.length];
   const initial = link.title[0]?.toUpperCase() ?? "L";
+
+  const [showQR, setShowQR] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  /* Close popover on outside click */
+  useEffect(() => {
+    if (!showQR) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setShowQR(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showQR]);
 
   return (
     <div
@@ -84,7 +101,7 @@ export function LinkCard({ link, onDelete, index = 0 }: LinkCardProps) {
         <p className="text-[10px] text-text-secondary">clicks</p>
       </div>
 
-      {/* Edit / Delete — shown on hover via group */}
+      {/* Edit / QR / Delete */}
       <div className="flex items-center gap-1 flex-shrink-0">
         <Link
           href={`/d/links/${link.slug}`}
@@ -93,6 +110,74 @@ export function LinkCard({ link, onDelete, index = 0 }: LinkCardProps) {
         >
           Edit
         </Link>
+
+        {/* QR button + popover */}
+        <div className="relative" ref={popoverRef}>
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowQR((v) => !v); }}
+            className={cn(
+              "px-2 py-1 rounded-lg text-[11px] transition-colors",
+              showQR
+                ? "bg-[#faeeda] text-[#854f0b]"
+                : "text-text-muted hover:text-text-primary hover:bg-lavender-light"
+            )}
+            title="QR code"
+          >
+            QR
+          </button>
+
+          {showQR && (
+            <div
+              className="absolute z-20"
+              style={{
+                top: "calc(100% + 8px)",
+                left: "50%",
+                transform: "translateX(-50%)",
+                background: "#ffffff",
+                borderRadius: 12,
+                border: "1px solid #e8e6e2",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                padding: 16,
+                minWidth: 160,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Caret pointing up */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: -6,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 0,
+                  height: 0,
+                  borderLeft: "6px solid transparent",
+                  borderRight: "6px solid transparent",
+                  borderBottom: "6px solid #e8e6e2",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  top: -5,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 0,
+                  height: 0,
+                  borderLeft: "6px solid transparent",
+                  borderRight: "6px solid transparent",
+                  borderBottom: "6px solid #ffffff",
+                }}
+              />
+              <QRPreview
+                url={appUrl}
+                label={`/${link.slug}`}
+                size={120}
+              />
+            </div>
+          )}
+        </div>
+
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(link.id); }}
           className="px-2 py-1 rounded-lg text-[11px] text-text-muted hover:text-error hover:bg-red-50 transition-colors"

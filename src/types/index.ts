@@ -13,6 +13,7 @@ export interface UserProfile {
   displayName: string | null;
   photoURL: string | null;
   username: string | null;        // chosen @username for bio page
+  activeBioId?: string | null;    // pointer to primary bio doc
   plan: PlanId;
   createdAt: Timestamp | Date;
   updatedAt?: Timestamp | Date;
@@ -52,8 +53,8 @@ export interface SocialLink {
 /* ---- Bio Page ---- */
 export interface BioPage {
   id: string;
-  uid: string;
-  username: string;               // @username, unique across all users
+  ownerId: string;
+  slug: string;                   // e.g. "mybio" for @ URL
   displayName: string;
   bio?: string;
   avatarUrl?: string;
@@ -62,7 +63,14 @@ export interface BioPage {
   linkIds: string[];
   // Theme
   theme: "default" | "dark" | "minimal";
+  lockPassword?: string;
   accentColor?: string;
+  // Link Analytics
+  clicks: number;
+  iosClicks?: number;
+  androidClicks?: number;
+  desktopClicks?: number;
+  countries?: Record<string, number>;
   // Metadata
   createdAt: Timestamp | Date;
   updatedAt?: Timestamp | Date;

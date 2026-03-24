@@ -210,12 +210,27 @@ const ANIM_MAP: Record<string, string> = {
 
 /* ── Click tracker (fire-and-forget) ── */
 
-function trackClick(username: string, linkId: string) {
+function trackClick(slug: string, linkId: string, bioId?: string) {
   if (typeof window === "undefined") return;
   fetch("/api/click", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, linkId }),
+    body: JSON.stringify({ slug, linkId, bioId }),
+  }).catch(() => {});
+}
+
+/* ── View tracker (fire-and-forget, once per session per bio) ── */
+
+function trackView(slug: string, bioId?: string) {
+  if (typeof window === "undefined") return;
+  const key = `viewed_bio_${bioId || slug}`;
+  if (sessionStorage.getItem(key)) return; // Only log once per session
+  sessionStorage.setItem(key, "1");
+
+  fetch("/api/view", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug, bioId }),
   }).catch(() => {});
 }
 
@@ -243,6 +258,14 @@ export function BioPageRenderer({
     (l) => l.isVisible && l.prioritize === "animate"
   );
 
+  // Track page view
+  useEffect(() => {
+    if (isPublic) {
+      const bioId = (data as any).id;
+      trackView(data.slug, bioId);
+    }
+  }, [isPublic, data.slug, data]);
+
   useEffect(() => {
     if (!isPublic) return;
     const redirectLink = (data.links ?? []).find((l) => {
@@ -255,11 +278,11 @@ export function BioPageRenderer({
     if (redirectLink) {
       const href = redirectLink.fallbackUrl || redirectLink.url;
       if (href) {
-        trackClick(data.username, redirectLink.id);
+        trackClick(data.slug, redirectLink.id);
         window.location.href = href;
       }
     }
-  }, [isPublic, data.links, data.username]);
+  }, [isPublic, data.links, data.slug]);
 
   const avatarSize = isHero ? HERO_AVATAR[variant] : sizes.avatarSize;
   const nameSize = isLargeTitle
@@ -271,7 +294,29 @@ export function BioPageRenderer({
   const now = isPublic ? new Date() : null;
   const visibleLinks = (data.links ?? [])
     .filter((l) => {
-      if (!l.isVisible) return false;
+      // 1. Dashboard visibility toggle (isVisible)
+      if (l.isVisible === false) return false;
+      
+      // 2. Archive/Active status (isActive) - explicitly check for false
+      if ((l as any).isActive === false) return false;
+
+      // 3. Completeness check (must have title and valid URL)
+      // This matches the dashboard's "isComplete" logic that disables the toggle
+      const hasTitle = !!l.title?.trim();
+      const rawUrl = l.url || l.fallbackUrl || "";
+      let hasValidUrl = false;
+      try {
+        const urlToTest = rawUrl.startsWith("http") ? rawUrl : "https://" + rawUrl;
+        const parsed = new URL(urlToTest);
+        hasValidUrl = parsed.protocol === "http:" || parsed.protocol === "https:";
+      // eslint-disable-next-line no-unused-vars
+      } catch (e) {
+        hasValidUrl = false;
+      }
+
+      if (!hasTitle || !hasValidUrl) return false;
+      
+      // 4. Scheduling (public bio page only)
       if (isPublic && l.scheduleStart) {
         const start = new Date(l.scheduleStart);
         if (now! < start) return false;
@@ -306,24 +351,24 @@ export function BioPageRenderer({
 
   return (
     <div
-      className={`flex flex-col items-center w-full ${variant === "full" || variant === "phone" ? "min-h-full" : ""} ${className}`}
+      className={`flex flex-col items-center w-full rounded-t-2xl ${variant === "full" || variant === "phone" ? "min-h-full" : "min-h-screen"} ${className}`}
       style={{
-        background: isPublic ? undefined : wallpaperBg,
+        background: wallpaperBg,
         color: theme.textColor,
         fontFamily: font,
       }}
     >
-      {/* Priority animation keyframes */}
+      { !isHero ? <span className="mt-5"/> : null}
+     {/* Priority animation keyframes */}
       {hasAnimations && (
         <style dangerouslySetInnerHTML={{ __html: PRIORITY_ANIMATIONS }} />
       )}
       {/* ── Hero header background (profile image, blur only at bottom) ── */}
       {isHero && (
         <div
-          className="relative overflow-hidden self-stretch"
+          className="relative overflow-hidden self-stretch rounded-t-2xl"
           style={{
             height: HERO_HEIGHT[variant],
-            borderRadius: "0 0 28px 28px",
           }}
         >
           {data.avatarUrl ? (
@@ -420,7 +465,7 @@ export function BioPageRenderer({
           color: theme.textColor,
         }}
       >
-        @{data.username}
+        @{data.slug}
       </Wrap>
 
       {/* ── Bio text ── */}
@@ -503,7 +548,8 @@ export function BioPageRenderer({
             isPublic={isPublic}
             fadeUp={fadeUp}
             LinkWrap={LinkWrap}
-            username={data.username}
+            username={data.slug}
+            bioId={(data as any).id}
           />
         ))}
 
@@ -566,7 +612,7 @@ export function BioPageRenderer({
           {theme.showBranding && (
             <a
               href={isPublic ? "/" : undefined}
-              className="flex items-center justify-center gap-1.5 opacity-35 hover:opacity-55 transition-opacity"
+              className="flex items-center justify-center gap-1.5 opacity-70 hover:opacity-55 transition-opacity"
               style={{
                 fontSize: sizes.brandingFont,
                 color: theme.textColor,
@@ -574,19 +620,14 @@ export function BioPageRenderer({
                 marginTop: theme.showJoinCta ? "0px" : "4px",
               }}
             >
-              <span
-                className="rounded-full inline-block"
-                style={{
-                  width: variant === "phone" ? "4px" : "5px",
-                  height: variant === "phone" ? "4px" : "5px",
-                  background: theme.accentColor,
-                }}
-              />
-              <span className="font-medium">tap-d.link</span>
+              <span className="font-medium">
+                <img src="/logo/logo-full-dark-text.svg" width={variant === "phone" ? "80px" : "100px"} height={variant === "phone" ? "20px" : "40px"} alt="" />
+              </span>
             </a>
           )}
         </div>
       )}
+      <span className="mt-5"/>
     </div>
   );
 }
@@ -735,6 +776,7 @@ function LinkCard({
   fadeUp,
   LinkWrap,
   username,
+  bioId,
 }: {
   link: BioLink;
   theme: BioTheme;
@@ -745,6 +787,7 @@ function LinkCard({
   fadeUp: Record<string, unknown>;
   LinkWrap: typeof motion.a | "a";
   username: string;
+  bioId?: string;
 }) {
   const [showLock, setShowLock] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
@@ -756,7 +799,7 @@ function LinkCard({
   const href = isPublic
     ? link.isSmart
       ? `/${link.slug}`
-      : link.fallbackUrl || link.url || "#"
+      : link.fallbackUrl || link.url
     : undefined;
 
   const target = isPublic && !link.isSmart ? "_blank" : undefined;
@@ -771,13 +814,13 @@ function LinkCard({
       return;
     }
 
-    trackClick(username, link.id);
+    trackClick(username, link.id, bioId);
   };
 
   const handleUnlock = () => {
     setUnlocked(true);
     setShowLock(false);
-    trackClick(username, link.id);
+    trackClick(username, link.id, bioId);
     // Navigate after unlock
     if (href) {
       if (target === "_blank") {
@@ -947,9 +990,9 @@ function LinkCard({
             return (
               <div
                 className="rounded-md flex-shrink-0 flex items-center justify-center"
-                style={{ width: imgSize, height: imgSize, marginRight: mr, background: plat.bg }}
+                style={{ width: imgSize, height: imgSize, marginRight: mr}}
               >
-                <Image src={plat.svgPath} alt={plat.name} width={Math.round(imgSize * 0.6)} height={Math.round(imgSize * 0.6)} />
+                <Image src={plat.svgPath} alt={plat.name} width={Math.round(imgSize)} height={Math.round(imgSize)} />
               </div>
             );
           }

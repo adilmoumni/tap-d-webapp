@@ -20,32 +20,37 @@ service cloud.firestore {
     }
 
     // ── Bio pages ──
-    match /biopages/{username} {
+    match /biopages/{bioId} {
       allow read: if true;
       allow create: if request.auth != null
-        && request.resource.data.uid == request.auth.uid;
-      allow update: if request.auth != null
-        && resource.data.uid == request.auth.uid;
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update: if (request.auth != null && resource.data.ownerId == request.auth.uid)
+        || (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'totalClicks', 'iosClicksTotal', 'androidClicksTotal', 'desktopClicksTotal', 'countriesTotal',
+             'totalViews', 'iosViewsTotal', 'androidViewsTotal', 'desktopViewsTotal', 'viewCountriesTotal'
+           ]));
       allow delete: if request.auth != null
-        && resource.data.uid == request.auth.uid;
+        && resource.data.ownerId == request.auth.uid;
 
       // Links subcollection
       match /links/{linkId} {
         allow read: if true;
-        // Only allow clicks field increment from anyone (for the click API)
+        // Only allow clicks field and breakdowns increment from anyone (for the click API)
         // Full writes require ownership
         allow update: if request.auth == null
-          ? (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clicks']))
-          : (get(/databases/$(database)/documents/biopages/$(username)).data.uid == request.auth.uid);
-        allow create, delete: if request.auth != null
-          && get(/databases/$(database)/documents/biopages/$(username)).data.uid == request.auth.uid;
+          ? (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clicks', 'iosClicks', 'androidClicks', 'desktopClicks', 'countries']))
+          : (get(/databases/$(database)/documents/biopages/$(bioId)).data.ownerId == request.auth.uid);
+        allow create: if request.auth != null
+          && getAfter(/databases/$(database)/documents/biopages/$(bioId)).data.ownerId == request.auth.uid;
+        allow delete: if request.auth != null
+          && get(/databases/$(database)/documents/biopages/$(bioId)).data.ownerId == request.auth.uid;
       }
 
       // Stats subcollection (daily aggregates — written by click API)
       match /stats/{date} {
         allow read: if request.auth != null
-          && get(/databases/$(database)/documents/biopages/$(username)).data.uid == request.auth.uid;
-        allow write: if true;  // click tracking writes from server API route
+          && get(/databases/$(database)/documents/biopages/$(bioId)).data.ownerId == request.auth.uid;
+        allow write: if true;  // click tracking writes from server API route — open
       }
     }
 
@@ -78,6 +83,12 @@ service cloud.firestore {
     match /clicks/{clickId} {
       allow read: if request.auth != null;
       allow create: if true;  // server-side click logging
+    }
+
+    // ── View events ──
+    match /views/{viewId} {
+      allow read: if request.auth != null;
+      allow create: if true;  // server-side view logging
     }
   }
 }

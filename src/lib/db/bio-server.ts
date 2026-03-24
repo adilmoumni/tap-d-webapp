@@ -17,6 +17,7 @@ import {
   updateDoc,
   increment,
   serverTimestamp,
+  limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { BioTheme, BioSocialLink } from "@/types/bio";
@@ -35,6 +36,7 @@ export interface BioLinkPlain {
   androidUrl?: string;
   fallbackUrl: string;
   isVisible: boolean;
+  isActive: boolean;
   clicks: number;
   order: number;
   thumbnailUrl?: string;
@@ -51,7 +53,9 @@ export interface BioLinkPlain {
 }
 
 export interface BioPagePlain {
-  username: string;
+  id: string;
+  ownerId: string;
+  slug: string;
   displayName: string;
   bio: string;
   avatarUrl: string | null;
@@ -77,15 +81,35 @@ function tsToString(val: unknown): string | null {
 
 /* ── Fetch bio page (with serialized timestamps) ── */
 
-export async function getBioPageServer(username: string): Promise<BioPagePlain | null> {
-  const snap = await getDoc(doc(db, "biopages", username));
-  if (!snap.exists()) return null;
+export async function getBioPageServer(slug: string): Promise<BioPagePlain | null> {
+  const q = query(collection(db, "biopages"), where("slug", "==", slug), limit(1));
+  let snap = await getDocs(q);
+  let parentCollection = "biopages";
+  
+  if (snap.empty) {
+    // Fallback: check legacy 'username' field in case it wasn't migrated
+    const legacyQ = query(collection(db, "biopages"), where("username", "==", slug), limit(1));
+    snap = await getDocs(legacyQ);
+  }
 
-  const d = snap.data();
+  if (snap.empty) {
+    // Second Fallback: check the legacy 'bio_pages' collection
+    const veryLegacyQ = query(collection(db, "bio_pages"), where("username", "==", slug), limit(1));
+    snap = await getDocs(veryLegacyQ);
+    if (!snap.empty) {
+      parentCollection = "bio_pages";
+    }
+  }
+
+  if (snap.empty) return null;
+
+  const docSnap = snap.docs[0];
+  const d = docSnap.data();
+  const bioId = docSnap.id;
 
   const linksSnap = await getDocs(
     query(
-      collection(db, "biopages", username, "links"),
+      collection(db, parentCollection, bioId, "links"),
       orderBy("order", "asc")
     )
   );
@@ -103,6 +127,7 @@ export async function getBioPageServer(username: string): Promise<BioPagePlain |
       androidUrl: l.androidUrl,
       fallbackUrl: l.fallbackUrl ?? "",
       isVisible: l.isVisible ?? true,
+      isActive: l.isActive ?? true,
       clicks: l.clicks ?? 0,
       order: l.order ?? 0,
       thumbnailUrl: l.thumbnailUrl,
@@ -120,8 +145,10 @@ export async function getBioPageServer(username: string): Promise<BioPagePlain |
   });
 
   return {
-    username: d.username ?? username,
-    displayName: d.displayName ?? username,
+    id: bioId,
+    ownerId: d.ownerId,
+    slug: d.slug ?? slug,
+    displayName: d.displayName ?? d.slug ?? slug,
     bio: d.bio ?? "",
     avatarUrl: d.avatarUrl ?? null,
     socialLinks: (d.socialLinks ?? []).map((s: BioSocialLink, i: number) => ({
@@ -152,27 +179,27 @@ export interface SmartLinkPlain {
 }
 
 export async function getLinkBySlugServer(slug: string): Promise<SmartLinkPlain | null> {
-  const q = query(
-    collection(db, "links"),
-    where("slug", "==", slug),
-    where("active", "==", true)
-  );
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
+  // Links are stored with slug as the document ID in the "links" collection
+  const snap = await getDoc(doc(db, "links", slug));
+  if (!snap.exists()) return null;
 
-  const d = snap.docs[0];
-  const data = d.data();
+  const data = snap.data();
+
+  // Respect the isActive flag (not "active")
+  if (data.isActive === false) return null;
+
   return {
-    id: d.id,
-    uid: data.uid,
-    slug: data.slug,
-    title: data.title,
-    urlIOS: data.urlIOS,
-    urlAndroid: data.urlAndroid,
-    urlDesktop: data.urlDesktop,
+    id: snap.id,
+    uid: data.uid ?? "",
+    slug: data.slug ?? slug,
+    title: data.title ?? "",
+    urlIOS: data.iosUrl ?? data.urlIOS,
+    urlAndroid: data.androidUrl ?? data.urlAndroid,
+    urlDesktop: data.fallbackUrl ?? data.urlDesktop ?? data.url ?? "",
     isSmart: data.isSmart ?? false,
   };
 }
+
 
 /* ── Server-side click logging ── */
 
@@ -211,4 +238,31 @@ export async function logClickServer(event: {
   }
 
   await setDoc(statsRef, aggregates, { merge: true });
+}
+
+/* ── Static generation helpers ── */
+
+export async function getAllPublicUsernames(): Promise<string[]> {
+  try {
+    const q = query(collection(db, "biopages"), where("isPublic", "==", true));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => d.data().slug || d.id);
+  } catch (err) {
+    console.error("Error fetching usernames for static generation:", err);
+    return [];
+  }
+}
+
+export async function getAllPublicLinks(): Promise<string[]> {
+  try {
+    const q = query(collection(db, "links"), where("active", "==", true));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => {
+      const data = d.data();
+      return data.slug || d.id;
+    });
+  } catch (err) {
+    console.error("Error fetching links for static generation:", err);
+    return [];
+  }
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { generateQRPng, generateQRSvg, downloadFile } from "@/lib/qr";
+import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------
    QRPreview — generates + displays a QR code for any URL.
@@ -13,9 +14,16 @@ interface QRPreviewProps {
   label: string;
   size?: number;
   showDownload?: boolean;
+  variant?: "default" | "minimal";
 }
 
-export function QRPreview({ url, label, size = 140, showDownload = true }: QRPreviewProps) {
+export function QRPreview({ 
+  url, 
+  label, 
+  size = 140, 
+  showDownload = true,
+  variant = "default"
+}: QRPreviewProps) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -40,24 +48,39 @@ export function QRPreview({ url, label, size = 140, showDownload = true }: QRPre
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const isMinimal = variant === "minimal";
+
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div 
+      className={cn("flex flex-col items-center gap-2", isMinimal && "opacity-70 rounded-lg p-1 bg-[#f8f7f5]")}
+    >
       {/* QR image */}
       <div
-        className="rounded-xl border border-[#e8e6e2] bg-white overflow-hidden flex-shrink-0"
+        className={cn(
+          "overflow-hidden flex-shrink-0",
+          isMinimal ? "bg-transparent" : "rounded-xl border border-[#e8e6e2] bg-white"
+        )}
         style={{ width: size, height: size }}
       >
         {dataUrl ? (
-          <img src={dataUrl} alt={`QR code for ${label}`} width={size} height={size} />
+          <img 
+            src={dataUrl} 
+            alt={`QR code for ${label}`} 
+            width={size} 
+            height={size} 
+            className={cn(isMinimal ? "mix-blend-multiply" : "")}
+          />
         ) : (
           <div className="w-full h-full animate-pulse bg-[#f5f3f0]" />
         )}
       </div>
 
-      {/* Label */}
-      <p className="text-[11px] font-mono text-[#8a8a9a]">{label}</p>
+      {/* Label (only in default) */}
+      {!isMinimal && (
+        <p className="text-[11px] font-mono text-[#8a8a9a]">{label}</p>
+      )}
 
-      {showDownload && (
+      {showDownload && !isMinimal && (
         <>
           {/* Download buttons */}
           <div className="flex gap-1.5">

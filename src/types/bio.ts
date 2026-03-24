@@ -64,6 +64,10 @@ export interface BioLink {
   isVisible: boolean;
   isActive: boolean;
   clicks: number;
+  iosClicks?: number;
+  androidClicks?: number;
+  desktopClicks?: number;
+  countries?: Record<string, number>;
   order: number;
   layout?: "classic" | "featured";
   thumbnailUrl?: string | null;
@@ -81,7 +85,8 @@ export interface BioLink {
 /* ── Bio page document ── */
 
 export interface BioPageData {
-  username: string;
+  ownerId: string;
+  slug: string;
   displayName: string;
   bio: string;
   avatarUrl: string | null;

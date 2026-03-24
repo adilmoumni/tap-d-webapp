@@ -29,7 +29,7 @@ export function LinkForm({ initial }: LinkFormProps) {
   const [urlIOS,      setUrlIOS]      = useState(initial?.urlIOS ?? "");
   const [urlAndroid,  setUrlAndroid]  = useState(initial?.urlAndroid ?? "");
   const [isSmart,     setIsSmart]     = useState(initial?.isSmart ?? false);
-  const [active,      setActive]      = useState(initial?.active ?? true);
+  const [isActive,    setIsActive]    = useState(initial?.isActive ?? true);
 
   const [slugStatus,  setSlugStatus]  = useState<"idle" | "checking" | "available" | "taken">("idle");
   const [saving,      setSaving]      = useState(false);
@@ -81,7 +81,7 @@ export function LinkForm({ initial }: LinkFormProps) {
         ...(isSmart && urlIOS     ? { urlIOS }     : {}),
         ...(isSmart && urlAndroid ? { urlAndroid }  : {}),
         isSmart,
-        active,
+        isActive,
       };
       if (isEdit && initial) {
         await update(initial.id, data);
@@ -214,8 +214,8 @@ export function LinkForm({ initial }: LinkFormProps) {
         <input
           id="active"
           type="checkbox"
-          checked={active}
-          onChange={(e) => setActive(e.target.checked)}
+          checked={isActive}
+          onChange={(e) => setIsActive(e.target.checked)}
           className="w-4 h-4 accent-dark rounded"
         />
         <label htmlFor="active" className="text-sm text-text-secondary cursor-pointer">

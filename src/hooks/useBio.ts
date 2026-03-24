@@ -14,7 +14,7 @@ interface UseBioReturn {
   bio: BioPage | null;
   loading: boolean;
   error: Error | null;
-  saveBio: (data: Partial<Omit<BioPage, "id" | "uid" | "createdAt">>) => Promise<void>;
+  saveBio: (data: Partial<Omit<BioPage, "id" | "ownerId" | "createdAt">>) => Promise<void>;
 }
 
 export function useBio(): UseBioReturn {
@@ -40,7 +40,7 @@ export function useBio(): UseBioReturn {
   }, [user]);
 
   const saveBio = useCallback(
-    async (data: Partial<Omit<BioPage, "id" | "uid" | "createdAt">>) => {
+    async (data: Partial<Omit<BioPage, "id" | "ownerId" | "createdAt">>) => {
       if (!user) throw new Error("Not authenticated");
       try {
         await upsertBioPage(user.uid, data);

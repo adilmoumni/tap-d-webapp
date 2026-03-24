@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  serverExternalPackages: ["firebase-admin"],
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",

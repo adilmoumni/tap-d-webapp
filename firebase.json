@@ -7,14 +7,35 @@
     "rules": "storage.rules"
   },
   "hosting": {
-    "source": ".",
+    "public": "out",
+    "cleanUrls": true,
+    "trailingSlash": false,
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "frameworksBackend": {
-      "region": "us-central1"
-    }
+    "rewrites": [
+      {
+        "source": "/u/:username",
+        "destination": "/u/placeholder.html"
+      },
+      {
+        "source": "/links/:slug",
+        "destination": "/links/placeholder.html"
+      },
+      {
+        "source": "/d/links/:slug",
+        "destination": "/d/links/placeholder.html"
+      },
+      {
+        "source": "/:slug",
+        "destination": "/placeholder.html"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   }
 }

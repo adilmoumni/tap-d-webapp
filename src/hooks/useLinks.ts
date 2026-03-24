@@ -14,7 +14,7 @@ interface UseLinksReturn {
   links: SmartLink[];
   loading: boolean;
   error: Error | null;
-  create: (data: Omit<SmartLink, "id" | "uid" | "clickCount" | "createdAt" | "updatedAt">) => Promise<string>;
+  create: (data: Omit<SmartLink, "id" | "uid" | "clicks" | "createdAt" | "updatedAt">) => Promise<string>;
   update: (id: string, data: Partial<Omit<SmartLink, "id" | "uid" | "createdAt">>) => Promise<void>;
   remove: (id: string) => Promise<void>;
 }
@@ -42,7 +42,7 @@ export function useLinks(): UseLinksReturn {
   }, [user]);
 
   const create = useCallback(
-    async (data: Omit<SmartLink, "id" | "uid" | "clickCount" | "createdAt" | "updatedAt">) => {
+    async (data: Omit<SmartLink, "id" | "uid" | "clicks" | "createdAt" | "updatedAt">) => {
       if (!user) throw new Error("Not authenticated");
       try {
         return await createLink(user.uid, data);

@@ -1,5 +1,12 @@
-import { redirect } from "next/navigation";
-export default async function OldLinkSlug({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  redirect(`/d/links/${slug}`);
+import LinkRedirectClient from "./LinkRedirectClient";
+
+export async function generateStaticParams() {
+  return [{ slug: "placeholder" }];
+}
+
+export const dynamicParams = false;
+export const dynamic = "force-static";
+
+export default function OldLinkSlug() {
+  return <LinkRedirectClient />;
 }

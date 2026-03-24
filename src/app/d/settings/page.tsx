@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "@/lib/auth";
+import { changeUsername } from "@/lib/db/bio";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -11,15 +13,62 @@ export default function SettingsPage() {
   const { user, profile } = useAuth();
   const router = useRouter();
 
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameDraft, setUsernameDraft] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [savingUsername, setSavingUsername] = useState(false);
+
   const currentPlan = PLANS.find((p) => p.id === (profile?.plan ?? "free"));
+  const currentUsername = profile?.username ?? "";
 
   const handleSignOut = async () => {
     await signOut();
     router.replace("/");
   };
 
+  const handleEditUsername = () => {
+    setUsernameDraft(currentUsername);
+    setEditingUsername(true);
+    setUsernameError("");
+  };
+
+  const handleSaveUsername = async () => {
+    if (!user || !profile) return;
+    const normalized = usernameDraft.toLowerCase().replace(/[^a-z0-9_.-]/g, "");
+    
+    if (normalized.length < 3) {
+      setUsernameError("Must be at least 3 characters.");
+      return;
+    }
+    if (normalized.length > 30) {
+      setUsernameError("Must be 30 characters or less.");
+      return;
+    }
+    if (normalized === currentUsername) {
+      setEditingUsername(false);
+      return;
+    }
+
+    if (!profile.activeBioId) {
+      setUsernameError("No active bio page found to update.");
+      return;
+    }
+
+    setSavingUsername(true);
+    setUsernameError("");
+    try {
+      await changeUsername(user.uid, profile.activeBioId, currentUsername, normalized);
+      setEditingUsername(false);
+    } catch (err: any) {
+      setUsernameError(err.message || "Failed to update username");
+    } finally {
+      setSavingUsername(false);
+    }
+  };
+
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      {/* Account Section */}
       <div className="bg-surface border border-border rounded-2xl p-6">
         <h3 className="font-semibold text-text-primary mb-4">Account</h3>
         <div className="flex items-center gap-4 mb-5">
@@ -47,6 +96,50 @@ export default function SettingsPage() {
             </a>
           )}
         </div>
+      </div>
+
+      {/* Bio Link Section */}
+      <div className="bg-surface border border-border rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-text-primary">Bio Link</h3>
+          {!editingUsername && (
+            <Button variant="secondary" size="sm" onClick={handleEditUsername}>Customize link</Button>
+          )}
+        </div>
+        
+        {editingUsername ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-0">
+              <span className="px-3 py-2 bg-background border border-r-0 border-border rounded-l-lg text-sm text-text-secondary font-mono">
+                tap-d.link/@
+              </span>
+              <input 
+                type="text"
+                value={usernameDraft}
+                onChange={e => {
+                  setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""));
+                  setUsernameError("");
+                }}
+                disabled={savingUsername}
+                placeholder="yourname"
+                className="flex-1 px-3 py-2 bg-background border border-border rounded-r-lg text-sm text-text-primary focus:border-lavender-dark focus:ring-1 focus:ring-lavender-dark outline-none transition-all font-mono"
+              />
+            </div>
+            {usernameError && <p className="text-xs text-red-500 font-medium">{usernameError}</p>}
+            <div className="flex items-center gap-2 justify-end pt-2">
+              <Button variant="secondary" size="sm" onClick={() => setEditingUsername(false)} disabled={savingUsername}>Cancel</Button>
+              <Button variant="primary" size="sm" onClick={handleSaveUsername} disabled={savingUsername}>
+                {savingUsername ? "Saving..." : "Save Link"}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 p-3 bg-background rounded-lg border border-border overflow-hidden">
+            <span className="text-text-secondary font-mono text-sm max-w-full truncate">
+              tap-d.link/@<span className="font-semibold text-text-primary">{currentUsername}</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {currentPlan && (
@@ -77,3 +170,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

@@ -51,7 +51,7 @@ export function FloatingCards() {
         className="absolute top-[20%] left-[18%] bg-white p-2.5 rounded-[14px] shadow-lg border border-border/40 z-10 flex items-center justify-center min-w-[140px]"
       >
         <div className="w-8 h-8 rounded-[8px] bg-[#f5f5f7] flex items-center justify-center text-dark mr-3">
-          <Apple size={18} fill="currentColor" />
+          <img src="/apple_music_icon.png" alt="Apple Music" className="w-8 h-8 rounded-[8px]" />
         </div>
         <span className="text-[0.78rem] font-bold text-dark">Apple Music</span>
       </motion.div>
@@ -116,7 +116,7 @@ export function FloatingCards() {
         {...floatY(4.2, 1)}
         className="absolute top-[5%] right-[16%] bg-accent-mint px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 z-20"
       >
-        <Smartphone size={14} className="text-dark" />
+        <img src="/android-icon.svg" alt="Android" className="w-8 h-8 rounded-[8px]" />
         <span className="text-[0.78rem] font-bold text-dark tracking-tight">Android App</span>
       </motion.div>
 

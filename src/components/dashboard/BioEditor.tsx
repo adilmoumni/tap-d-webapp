@@ -101,7 +101,7 @@ export function BioEditor() {
   /* Hydrate from Firestore */
   useEffect(() => {
     if (!bio) return;
-    setUsername(bio.username       ?? "");
+    setUsername(bio.slug       ?? "");
     setDisplayName(bio.displayName ?? "");
     setBioText(bio.bio             ?? "");
     setTheme((bio.theme as Theme)  ?? "default");
@@ -112,7 +112,7 @@ export function BioEditor() {
   /* Default: all active links selected when no saved state */
   useEffect(() => {
     if (bio || linksLoading || selectedIds.length > 0) return;
-    setSelectedIds(links.filter((l) => l.active).map((l) => l.id));
+    setSelectedIds(links.filter((l) => l.isActive).map((l) => l.id));
   }, [bio, links, linksLoading, selectedIds.length]);
 
   /* ================================================================
@@ -171,7 +171,6 @@ export function BioEditor() {
     setError(null);
     try {
       await saveBio({
-        username,
         displayName,
         bio: bioText,
         theme,
@@ -225,14 +224,15 @@ export function BioEditor() {
           <label className="block text-sm font-medium text-text-primary mb-1.5">Username</label>
           <Input
             value={username}
-            onChange={(e) =>
-              setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))
-            }
+            readOnly
             prefix="tap-d.link/@"
             placeholder="yourname"
             mono
-            required
+            disabled
           />
+          <p className="mt-1.5 text-xs text-text-muted">
+            You can change your username in <a href="/d/settings" className="underline hover:text-text-primary">Settings</a>.
+          </p>
           {previewUrl && (
             <a
               href={previewUrl}

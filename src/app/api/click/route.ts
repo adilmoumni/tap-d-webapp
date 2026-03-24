@@ -1,49 +1,92 @@
-import { NextResponse } from "next/server";
-import {
-  doc,
-  updateDoc,
-  increment,
-  setDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { NextRequest, NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
-/* ------------------------------------------------------------------
-   POST /api/click — lightweight click tracker for bio page links.
+function toFieldKey(s: string): string {
+  return s.replace(/[.$/[\]#]/g, "_").slice(0, 64) || "unknown";
+}
 
-   Body: { username: string, linkId: string }
+function parseDevice(ua: string): "ios" | "android" | "desktop" {
+  if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
+  if (/Android/i.test(ua)) return "android";
+  return "desktop";
+}
 
-   Increments the click counter on the bio link document and
-   writes a daily aggregate stat. Fire-and-forget from the client.
------------------------------------------------------------------- */
-
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { username, linkId } = await request.json();
+    const body = await req.json();
+    const { slug, linkId, bioId } = body as {
+      slug?: string;
+      linkId: string;
+      bioId?: string;
+    };
 
-    if (!username || !linkId) {
-      return NextResponse.json({ error: "Missing username or linkId" }, { status: 400 });
+    const ua      = req.headers.get("user-agent") ?? "";
+    const referrer = req.headers.get("referer") ?? "direct";
+    const device  = parseDevice(ua);
+    const country = req.headers.get("cf-ipcountry") || req.headers.get("x-vercel-ip-country") || req.headers.get("x-country-code") || "Unknown";
+    const today   = new Date().toISOString().slice(0, 10);
+
+    let resolvedBioId = bioId;
+    if (!resolvedBioId && slug) {
+      const snap = await adminDb.collection("biopages").where("slug", "==", slug).limit(1).get();
+      if (!snap.empty) resolvedBioId = snap.docs[0].id;
     }
 
-    // Increment click count on the link doc
-    const linkRef = doc(db, "biopages", username, "links", linkId);
-    await updateDoc(linkRef, { clicks: increment(1) });
+    const promises: Promise<unknown>[] = [];
 
-    // Write daily aggregate
-    const today = new Date().toISOString().slice(0, 10);
-    const statsRef = doc(db, "biopages", username, "stats", today);
-    await setDoc(
-      statsRef,
-      {
-        clicks: increment(1),
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
+    // ── 1. Raw click event ──────────────────────────
+    promises.push(
+      adminDb.collection("clicks").add({
+        linkId,
+        bioId: resolvedBioId ?? null,
+        slug: slug ?? null,
+        device,
+        country,
+        referrer: toFieldKey(referrer),
+        ua,
+        createdAt: FieldValue.serverTimestamp(),
+      })
     );
 
+    if (resolvedBioId) {
+      // ── 2. Per-link click counter & breakdowns ──
+      const linkRef = adminDb.collection("biopages").doc(resolvedBioId).collection("links").doc(linkId);
+      const linkDeviceField = device === "ios" ? "iosClicks" : device === "android" ? "androidClicks" : "desktopClicks";
+
+      promises.push(linkRef.set({
+        clicks: FieldValue.increment(1),
+        [linkDeviceField]: FieldValue.increment(1),
+        [`countries.${toFieldKey(country)}`]: FieldValue.increment(1),
+      }, { merge: true }));
+
+      // ── 3. Bio page daily stats ───────────────────
+      const bioStatsRef = adminDb.collection("biopages").doc(resolvedBioId).collection("stats").doc(today);
+      promises.push(
+        bioStatsRef.set({
+          clicks: FieldValue.increment(1),
+          [linkDeviceField]: FieldValue.increment(1),
+          [`links.${linkId}`]: FieldValue.increment(1),
+          [`referrers.${toFieldKey(referrer)}`]: FieldValue.increment(1),
+          [`countries.${toFieldKey(country)}`]: FieldValue.increment(1),
+        }, { merge: true })
+      );
+
+      // ── 4. Bio page all-time totals ───────────────
+      const bioRef = adminDb.collection("biopages").doc(resolvedBioId);
+      promises.push(
+        bioRef.set({
+          totalClicks: FieldValue.increment(1),
+          [linkDeviceField + "Total"]: FieldValue.increment(1),
+          [`countriesTotal.${toFieldKey(country)}`]: FieldValue.increment(1),
+        }, { merge: true })
+      );
+    }
+
+    await Promise.allSettled(promises);
     return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error("[api/click] Error:", error);
-    return NextResponse.json({ error: "Failed to log click" }, { status: 500 });
+  } catch (err) {
+    console.error("[/api/click] Error:", err);
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

@@ -32,7 +32,9 @@ import { uploadThumbnail } from "@/lib/storage";
 import { findPlatform } from "@/lib/platforms";
 import Image from "next/image";
 import type { BioLink } from "@/types/bio";
-import { SmartLinkForm } from "@/components/dashboard/links/SmartLinkForm";
+import { QRPreview } from "@/components/dashboard/qr/QRPreview";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://tap-d.link";
 
 /* ─────────────────────────────────────────────
    Drag handle — 2×3 dot grid
@@ -134,8 +136,8 @@ function PlatformBadge({ title, size = 36 }: { title: string; size?: number }) {
         <Image
           src={platform.svgPath}
           alt={platform.name}
-          width={Math.round(size * 0.55)}
-          height={Math.round(size * 0.55)}
+          width={Math.round(size)}
+          height={Math.round(size)}
         />
       </div>
     );
@@ -915,50 +917,90 @@ function PriorityPanel({
 ───────────────────────────────────────────── */
 
 function StatsPanel({ link }: { link: BioLink }) {
+  const total = link.clicks || 1;
+  const ios = link.iosClicks || 0;
+  const android = link.androidClicks || 0;
+  const desktop = link.desktopClicks || 0;
+  
+  const devs = [
+    { label: "iOS",     value: ios,     pct: Math.round((ios / total) * 100),     color: "#e8b86d" },
+    { label: "Android", value: android, pct: Math.round((android / total) * 100), color: "#7c6cef" },
+    { label: "Desktop", value: desktop, pct: Math.round((desktop / total) * 100), color: "#5cb98c" },
+  ].filter(d => d.value > 0);
+
+  const countries = Object.entries(link.countries || {})
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, clicks]) => ({ name, clicks }));
+
   return (
     <div className="px-4 pb-4 pt-1">
-      <div className="bg-[#faf8fc] rounded-[12px] p-4 space-y-3">
+      <div className="bg-[#faf8fc] rounded-[12px] p-4 space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-[12px] font-semibold text-[#1a1a2e]">Link analytics</span>
           <span className="text-[11px] text-[#8a8a9a]">All time</span>
         </div>
 
         {/* Total clicks */}
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <div className="text-[24px] font-bold text-[#1a1a2e]">
-              {link.clicks.toLocaleString()}
-            </div>
-            <div className="text-[11px] text-[#8a8a9a]">Total clicks</div>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 bg-white rounded-[10px] p-3 border border-[#e8e6e2]">
+            <p className="text-[10px] text-[#8a8a9a] mb-0.5">Total Clicks</p>
+            <p className="text-[22px] font-bold text-[#1a1a2e]">{link.clicks.toLocaleString()}</p>
+          </div>
+          <div className="flex-1 flex flex-col justify-center">
+             {link.isSmart && (
+               <div className="text-[10px] text-[#8a8a9a]">
+                 <strong className="text-[#e8b86d] font-semibold">Smart Link</strong> enabled.<br/>
+                 Routing visitors by device.
+               </div>
+             )}
           </div>
         </div>
 
+        {/* Devices breakdown */}
+        {devs.length > 0 && (
+          <div className="bg-white rounded-[10px] p-3 border border-[#e8e6e2]">
+            <p className="text-[10px] text-[#8a8a9a] mb-2 font-medium">Devices</p>
+            <div className="flex rounded-full overflow-hidden h-3 gap-[1px] mb-2">
+              {devs.map((d) => (
+                <div
+                  key={d.label}
+                  style={{ width: `${d.pct}%`, background: d.color }}
+                  title={`${d.label}: ${d.pct}%`}
+                />
+              ))}
+            </div>
+            <div className="flex gap-3 mt-1">
+              {devs.map(({label, color, pct}) => (
+                <span key={label} className="flex items-center gap-1 text-[10px] text-[#1a1a2e] font-medium">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full" style={{background: color}} />
+                  {label} {pct}%
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Top Countries */}
+        {countries.length > 0 && (
+          <div className="bg-white rounded-[10px] p-3 border border-[#e8e6e2]">
+            <p className="text-[10px] text-[#8a8a9a] mb-2 font-medium">Top Locations</p>
+            <div className="space-y-1.5">
+              {countries.map((c) => (
+                <div key={c.name} className="flex items-center justify-between text-[11px]">
+                  <span className="text-[#1a1a2e]">{c.name}</span>
+                  <span className="font-semibold text-[#1a1a2e]">{c.clicks.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Slug info */}
-        <div className="flex items-center gap-2 pt-1 border-t border-[#e8e6e2]">
+        <div className="flex items-center gap-2 pt-2 border-t border-[#e8e6e2]">
           <span className="text-[11px] text-[#8a8a9a]">Short URL:</span>
           <span className="text-[11px] font-mono text-[#1a1a2e]">tap-d.link/{link.slug}</span>
         </div>
-
-        {link.isSmart && (
-          <div className="space-y-1.5 pt-1 border-t border-[#e8e6e2]">
-            <span className="text-[11px] font-semibold text-[#b8860b]">Smart Link destinations</span>
-            {link.iosUrl && (
-              <div className="text-[11px] text-[#8a8a9a] truncate">
-                <span className="font-medium text-[#1a1a2e]">iOS:</span> {link.iosUrl}
-              </div>
-            )}
-            {link.androidUrl && (
-              <div className="text-[11px] text-[#8a8a9a] truncate">
-                <span className="font-medium text-[#1a1a2e]">Android:</span> {link.androidUrl}
-              </div>
-            )}
-            {link.fallbackUrl && (
-              <div className="text-[11px] text-[#8a8a9a] truncate">
-                <span className="font-medium text-[#1a1a2e]">Desktop:</span> {link.fallbackUrl}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -973,18 +1015,18 @@ function SortableLinkCard({
   onToggle,
   onDelete,
   onUpdate,
+  bioSlug,
 }: {
   link: BioLink;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, data: Partial<BioLink>) => void;
+  bioSlug?: string;
 }) {
-  const [statsOpen, setStatsOpen] = useState(false);
-  const [thumbnailOpen, setThumbnailOpen] = useState(false);
-  const [lockOpen, setLockOpen] = useState(false);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [layoutOpen, setLayoutOpen] = useState(false);
-  const [priorityOpen, setPriorityOpen] = useState(false);
+  type Panel = "layout" | "qr" | "thumbnail" | "priority" | "schedule" | "lock" | "stats" | null;
+  const [activePanel, setActivePanel] = useState<Panel>(null);
+  const toggle = (p: Panel) => setActivePanel(prev => prev === p ? null : p);
+
 
   const linkUrl = link.url || link.fallbackUrl || "";
   const hasValidUrl = linkUrl ? isValidUrl(linkUrl.startsWith("http") ? linkUrl : "https://" + linkUrl) : false;
@@ -1070,11 +1112,11 @@ function SortableLinkCard({
       {/* Bottom row */}
       <div className="flex items-center px-4 pb-3.5 pt-2 gap-2">
         <button
-          onClick={() => setLayoutOpen(!layoutOpen)}
+          onClick={() => toggle("layout")}
           title="Layout"
           className={cn(
             "w-[30px] h-[30px] rounded-[8px] border flex items-center justify-center transition-all duration-150 flex-shrink-0",
-            layoutOpen
+            activePanel === "layout"
               ? "border-[#e8b86d] bg-[#faeeda] text-[#b8860b]"
               : link.layout === "featured"
                 ? "border-[#e8b86d] bg-white text-[#b8860b] hover:bg-[#faeeda]"
@@ -1083,13 +1125,24 @@ function SortableLinkCard({
         >
           <LayoutGrid size={15} />
         </button>
-        <IconBtn icon={QrCode} title="QR code" />
         <button
-          onClick={() => setThumbnailOpen(!thumbnailOpen)}
+          onClick={() => toggle("qr")}
+          title="QR code"
+          className={cn(
+            "w-[30px] h-[30px] rounded-[8px] border flex items-center justify-center transition-all duration-150 flex-shrink-0",
+            activePanel === "qr"
+              ? "border-[#e8b86d] bg-[#faeeda] text-[#b8860b]"
+              : "border-[#f0eeea] bg-white text-[#8a8a9a] hover:bg-[#f0eeea] hover:text-[#1a1a2e]"
+          )}
+        >
+          <QrCode size={15} />
+        </button>
+        <button
+          onClick={() => toggle("thumbnail")}
           title="Thumbnail"
           className={cn(
             "w-[30px] h-[30px] rounded-[8px] border flex items-center justify-center transition-all duration-150 flex-shrink-0",
-            thumbnailOpen
+            activePanel === "thumbnail"
               ? "border-[#e8b86d] bg-[#faeeda] text-[#b8860b]"
               : link.thumbnailUrl
                 ? "border-[#e8b86d] bg-white text-[#b8860b] hover:bg-[#faeeda]"
@@ -1099,11 +1152,11 @@ function SortableLinkCard({
           <ImageIcon size={15} />
         </button>
         <button
-          onClick={() => setPriorityOpen(!priorityOpen)}
+          onClick={() => toggle("priority")}
           title="Priority"
           className={cn(
             "w-[30px] h-[30px] rounded-[8px] border flex items-center justify-center transition-all duration-150 flex-shrink-0",
-            priorityOpen
+            activePanel === "priority"
               ? "border-[#e8b86d] bg-[#faeeda] text-[#b8860b]"
               : link.prioritize && link.prioritize !== "none"
                 ? "border-[#e8b86d] bg-white text-[#b8860b] hover:bg-[#faeeda]"
@@ -1113,11 +1166,11 @@ function SortableLinkCard({
           <Star size={15} />
         </button>
         <button
-          onClick={() => setScheduleOpen(!scheduleOpen)}
+          onClick={() => toggle("schedule")}
           title="Schedule"
           className={cn(
             "w-[30px] h-[30px] rounded-[8px] border flex items-center justify-center transition-all duration-150 flex-shrink-0",
-            scheduleOpen
+            activePanel === "schedule"
               ? "border-[#e8b86d] bg-[#faeeda] text-[#b8860b]"
               : link.scheduleStart
                 ? "border-[#e8b86d] bg-white text-[#b8860b] hover:bg-[#faeeda]"
@@ -1127,11 +1180,11 @@ function SortableLinkCard({
           <Clock size={15} />
         </button>
         <button
-          onClick={() => setLockOpen(!lockOpen)}
+          onClick={() => toggle("lock")}
           title="Lock"
           className={cn(
             "w-[30px] h-[30px] rounded-[8px] border flex items-center justify-center transition-all duration-150 flex-shrink-0",
-            lockOpen
+            activePanel === "lock"
               ? "border-[#e8b86d] bg-[#faeeda] text-[#b8860b]"
               : link.lockType && link.lockType !== "none"
                 ? "border-[#e8b86d] bg-white text-[#b8860b] hover:bg-[#faeeda]"
@@ -1143,17 +1196,17 @@ function SortableLinkCard({
 
         {/* Clickable stats toggle */}
         <button
-          onClick={() => setStatsOpen(!statsOpen)}
+          onClick={() => toggle("stats")}
           className={cn(
             "flex items-center gap-1 text-[12px] ml-1 flex-shrink-0 px-2 py-1 rounded-[8px] transition-all",
-            statsOpen
+            activePanel === "stats"
               ? "bg-[#faf8fc] text-[#1a1a2e] font-semibold"
               : "text-[#8a8a9a] hover:bg-[#faf8fc] hover:text-[#1a1a2e]"
           )}
         >
-          <BarChart3 size={14} className={statsOpen ? "text-[#e8b86d]" : "opacity-50"} />
+          <BarChart3 size={14} className={activePanel === "stats" ? "text-[#e8b86d]" : "opacity-50"} />
           <span>{link.clicks > 0 ? `${link.clicks.toLocaleString()} clicks` : "0 clicks"}</span>
-          {statsOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          {activePanel === "stats" ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </button>
 
         <div className="ml-auto">
@@ -1161,23 +1214,33 @@ function SortableLinkCard({
         </div>
       </div>
 
-      {/* Collapsible layout */}
-      {layoutOpen && <LayoutPanel link={link} onUpdate={onUpdate} />}
+      {/* Collapsible QR */}
+      {activePanel === "qr" && (
+        <div className="px-4 pb-4 pt-1">
+          <div className="bg-[#faf8fc] rounded-[12px] p-4 flex flex-col items-center gap-3">
+            <span className="text-[11px] font-semibold text-[#8a8a9a] uppercase tracking-wider self-start">
+              QR Code — scan to open this link
+            </span>
+            <QRPreview
+              url={link.slug ? `${APP_URL}/${link.slug}` : (link.url || link.fallbackUrl || APP_URL)}
+              label={link.slug ? `/${link.slug}` : (link.url || link.fallbackUrl || "")}
+              size={150}
+            />
+            <p className="text-[10px] text-[#8a8a9a] text-center leading-relaxed max-w-[220px]">
+              Scanning routes visitors to the right destination via smart link detection.
+            </p>
+          </div>
+        </div>
+      )}
 
-      {/* Collapsible thumbnail */}
-      {thumbnailOpen && <ThumbnailPanel link={link} onUpdate={onUpdate} />}
+      {/* Collapsible panels — accordion: only one open at a time */}
+      {activePanel === "layout"   && <LayoutPanel   link={link} onUpdate={onUpdate} />}
+      {activePanel === "thumbnail" && <ThumbnailPanel link={link} onUpdate={onUpdate} />}
+      {activePanel === "priority" && <PriorityPanel  link={link} onUpdate={onUpdate} />}
+      {activePanel === "lock"     && <LockPanel      link={link} onUpdate={onUpdate} />}
+      {activePanel === "schedule" && <SchedulePanel  link={link} onUpdate={onUpdate} />}
+      {activePanel === "stats"    && <StatsPanel     link={link} />}
 
-      {/* Collapsible priority */}
-      {priorityOpen && <PriorityPanel link={link} onUpdate={onUpdate} />}
-
-      {/* Collapsible lock */}
-      {lockOpen && <LockPanel link={link} onUpdate={onUpdate} />}
-
-      {/* Collapsible schedule */}
-      {scheduleOpen && <SchedulePanel link={link} onUpdate={onUpdate} />}
-
-      {/* Collapsible stats */}
-      {statsOpen && <StatsPanel link={link} />}
     </div>
   );
 }
@@ -1211,10 +1274,8 @@ export function BioLinksEditor() {
     [sortedLinks, reorderLinks]
   );
 
-  const [formInitialData, setFormInitialData] = useState<Partial<BioLink> | null>(null);
-
   const handleAddLink = (name: string) => {
-    setFormInitialData({ title: name });
+    addLink({ title: name, isSmart: false });
     setShowPopup(false);
   };
 
@@ -1263,6 +1324,7 @@ export function BioLinksEditor() {
                   onToggle={toggleLinkVisibility}
                   onDelete={removeLink}
                   onUpdate={updateLink}
+                  bioSlug={data.slug || ""}
                 />
               ))
             )}
@@ -1276,25 +1338,6 @@ export function BioLinksEditor() {
         onClose={() => setShowPopup(false)}
         onAdd={handleAddLink}
       />
-
-      {/* SmartLinkForm Modal */}
-      {formInitialData && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#1a1a2e]/40 p-4 overflow-y-auto backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[20px] p-6 max-w-2xl w-full my-auto shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-             <h2 className="text-xl font-bold mb-4 text-[#1a1a2e] sticky top-0 bg-white z-10 py-2 border-b border-[#e8e6e2]">Complete your link</h2>
-             <SmartLinkForm 
-               mode="create" 
-               initialData={formInitialData} 
-               onSuccess={(link: BioLink) => {
-                 setFormInitialData(null);
-                 // Also add directly to Bio editor context state so it renders immediately
-                 addLink(link);
-               }}
-               onCancel={() => setFormInitialData(null)}
-             />
-          </div>
-        </div>
-      )}
     </>
   );
 }

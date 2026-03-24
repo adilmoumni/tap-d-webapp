@@ -39,8 +39,8 @@ const bioDesignTabs: TabItem[] = [
 
 const settingsTabs: TabItem[] = [
   { id: "account",  label: "Account",      icon: User },
-  { id: "billing",  label: "Plan & billing", icon: CreditCard },
-  { id: "api-keys", label: "API keys",     icon: KeyRound },
+  // { id: "billing",  label: "Plan & billing", icon: CreditCard },
+  // { id: "api-keys", label: "API keys",     icon: KeyRound },
 ];
 
 const sectionTitles: Record<DashboardSection, string> = {

@@ -91,7 +91,7 @@ export function BioPageRenderer({ data, preview = false, className = "" }: BioPa
 
   return (
     <div
-      className={`flex flex-col items-center w-full min-h-full ${className}`}
+      className={`flex flex-col items-center w-full min-h-full m-10 ${className}`}
       style={{
         background: theme.background,
         color: theme.textColor,

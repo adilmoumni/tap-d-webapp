@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Loader2, Check, X, Monitor } from "lucide-react";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Loader2, Check, X, Monitor, Copy } from "lucide-react";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import type { BioLink } from "@/types/bio";
 import { cn } from "@/lib/utils";
+import { QRPreview } from "@/components/dashboard/qr/QRPreview";
 
 const RESERVED = new Set(["dashboard", "login", "signup", "api", "settings", "pricing", "bio", "b", "d", "_next"]);
 
@@ -129,6 +130,14 @@ export function SmartLinkForm({
   };
 
   const [submitting, setSubmitting] = useState(false);
+  const [createdLink, setCreatedLink] = useState<BioLink | null>(null);
+  const [toastCopied, setToastCopied] = useState(false);
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const dismissToast = useCallback(() => {
+    setCreatedLink(null);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,6 +193,12 @@ export function SmartLinkForm({
       }
 
       await Promise.all(promises);
+      // Show success toast before calling onSuccess
+      setCreatedLink(newLink);
+      toastTimerRef.current = setTimeout(() => {
+        setCreatedLink(null);
+        onSuccess(newLink);
+      }, 5000);
       onSuccess(newLink);
     } catch (err) {
       console.error("Failed to save link:", err);
@@ -195,8 +210,89 @@ export function SmartLinkForm({
 
   const isFormValid = title.trim() && slug.trim() && fallbackUrl.trim() && (slugState === "available" || slugState === "idle");
 
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://tap-d.link";
+
+  const handleToastCopy = async (url: string) => {
+    await navigator.clipboard.writeText(url);
+    setToastCopied(true);
+    setTimeout(() => setToastCopied(false), 2000);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5 pt-2">
+    <>
+      {/* ── Link created success toast ── */}
+      {createdLink && (
+        <div
+          onClick={dismissToast}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(10,10,15,0.35)",
+            backdropFilter: "blur(2px)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#ffffff",
+              borderRadius: 16,
+              border: "1px solid #e8e6e2",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+              padding: "24px 28px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 16,
+              minWidth: 240,
+              position: "relative",
+            }}
+          >
+            {/* Close */}
+            <button
+              onClick={dismissToast}
+              style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", cursor: "pointer", color: "#aaa", padding: 4 }}
+            >
+              <X size={14} />
+            </button>
+
+            {/* Check badge */}
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#e1f5ee", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Check size={20} style={{ color: "#1a7a4a" }} />
+            </div>
+
+            <p style={{ fontWeight: 600, fontSize: 15, color: "#1a1a2e", margin: 0 }}>Link created!</p>
+
+            {/* QR */}
+            <QRPreview
+              url={`${APP_URL}/${createdLink.slug}`}
+              label={`/${createdLink.slug}`}
+              size={140}
+            />
+
+            {/* URL + copy */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#f5f3f0", border: "1px solid #e8e6e2", borderRadius: 8, padding: "6px 10px", width: "100%" }}>
+              <span style={{ flex: 1, fontSize: 11, fontFamily: "monospace", color: "#444", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {APP_URL}/{createdLink.slug}
+              </span>
+              <button
+                onClick={() => handleToastCopy(`${APP_URL}/${createdLink.slug}`)}
+                style={{ flexShrink: 0, background: "none", border: "none", cursor: "pointer", color: toastCopied ? "#e8b86d" : "#888", padding: 2, transition: "color 0.15s" }}
+                title="Copy URL"
+              >
+                {toastCopied ? <Check size={13} /> : <Copy size={13} />}
+              </button>
+            </div>
+
+            <p style={{ fontSize: 10, color: "#aaa", margin: 0 }}>Closes automatically in 5s · click anywhere to dismiss</p>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5 pt-2">
       <div className="flex flex-col gap-1.5">
         <label className="text-[12px] font-semibold text-[#1a1a2e]">Link title <span className="text-red-500">*</span></label>
         <input 
@@ -421,6 +517,7 @@ export function SmartLinkForm({
       </div>
       
     </form>
+    </>
   )
 }
 

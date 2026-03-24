@@ -13,7 +13,6 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   getBioPage,
   getBioLinks,
-  createBioPage,
   updateBioPage,
   updateBioTheme as updateBioThemeDB,
   addBioLink as addBioLinkDB,
@@ -70,7 +69,8 @@ const BioEditorContext = createContext<BioEditorContextValue | null>(null);
 /* ── Default data (used before Firestore load / for new users) ── */
 
 const EMPTY_PAGE: BioPageData = {
-  username: "",
+  ownerId: "",
+  slug: "",
   displayName: "",
   bio: "",
   avatarUrl: null,
@@ -86,7 +86,8 @@ const EMPTY_PAGE: BioPageData = {
 
 const DEMO_PAGE: BioPageData = {
   ...EMPTY_PAGE,
-  username: "emma",
+  ownerId: "demo",
+  slug: "emma",
   displayName: "Emma Creates",
   bio: "Digital creator & UI designer. Building the future of smart links.",
   socialLinks: [
@@ -96,10 +97,10 @@ const DEMO_PAGE: BioPageData = {
     { platform: "tiktok", url: "https://tiktok.com/@emma", icon: "", order: 3 },
   ],
   links: [
-    { id: "1", title: "Spotify playlist", url: "", slug: "spotify", icon: "", isSmart: true, fallbackUrl: "", isVisible: true, clicks: 2340, order: 0, createdAt: null as unknown as BioLink["createdAt"] },
-    { id: "2", title: "ColorPal app", url: "", slug: "colorpal", icon: "", isSmart: true, fallbackUrl: "", isVisible: true, clicks: 1102, order: 1, createdAt: null as unknown as BioLink["createdAt"] },
-    { id: "3", title: "Instagram", url: "", slug: "instagram", icon: "", isSmart: false, fallbackUrl: "", isVisible: true, clicks: 0, order: 2, createdAt: null as unknown as BioLink["createdAt"] },
-    { id: "4", title: "Newsletter", url: "", slug: "newsletter", icon: "", isSmart: false, fallbackUrl: "", isVisible: false, clicks: 312, order: 3, createdAt: null as unknown as BioLink["createdAt"] },
+    { id: "1", title: "Spotify playlist", url: "", slug: "spotify", icon: "", isSmart: true, fallbackUrl: "", isVisible: true, isActive: true, clicks: 2340, order: 0, createdAt: null as unknown as BioLink["createdAt"] },
+    { id: "2", title: "ColorPal app", url: "", slug: "colorpal", icon: "", isSmart: true, fallbackUrl: "", isVisible: true, isActive: true, clicks: 1102, order: 1, createdAt: null as unknown as BioLink["createdAt"] },
+    { id: "3", title: "Instagram", url: "", slug: "instagram", icon: "", isSmart: false, fallbackUrl: "", isVisible: true, isActive: true, clicks: 0, order: 2, createdAt: null as unknown as BioLink["createdAt"] },
+    { id: "4", title: "Newsletter", url: "", slug: "newsletter", icon: "", isSmart: false, fallbackUrl: "", isVisible: false, isActive: true, clicks: 312, order: 3, createdAt: null as unknown as BioLink["createdAt"] },
   ],
 };
 
@@ -107,10 +108,10 @@ const DEMO_PAGE: BioPageData = {
 
 export function BioEditorProvider({ children }: { children: ReactNode }) {
   const { user, profile } = useAuth();
-  const username = profile?.username ?? null;
+  const activeBioId = profile?.activeBioId ?? null;
 
-  const [data, setData] = useState<BioPageData>(DEMO_PAGE);
-  const [savedData, setSavedData] = useState<BioPageData>(DEMO_PAGE);
+  const [data, setData] = useState<BioPageData>(EMPTY_PAGE);
+  const [savedData, setSavedData] = useState<BioPageData>(EMPTY_PAGE);
   const [isDirty, setIsDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [loading, setLoading] = useState(true);
@@ -118,9 +119,9 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedIndicatorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* ── Load from Firestore on mount / username change ── */
+  /* ── Load from Firestore on mount / activeBioId change ── */
   useEffect(() => {
-    if (!username) {
+    if (!activeBioId) {
       setLoading(false);
       return;
     }
@@ -130,8 +131,8 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
     async function load() {
       try {
         const [page, links] = await Promise.all([
-          getBioPage(username!),
-          getBioLinks(username!),
+          getBioPage(activeBioId!),
+          getBioLinks(activeBioId!),
         ]);
 
         if (cancelled) return;
@@ -144,24 +145,6 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
           };
           setData(fullData);
           setSavedData(fullData);
-        } else if (user) {
-          // Bio page doesn't exist yet — create it
-          await createBioPage(user.uid, username!, {
-            displayName: user.displayName ?? username!,
-            bio: "",
-            avatarUrl: user.photoURL ?? null,
-          });
-          // Reload after creation
-          const newPage = await getBioPage(username!);
-          if (newPage && !cancelled) {
-            const fullData: BioPageData = {
-              ...newPage,
-              links: [],
-              theme: { ...DEFAULT_THEME, ...newPage.theme },
-            };
-            setData(fullData);
-            setSavedData(fullData);
-          }
         }
       } catch (err) {
         console.error("[BioEditor] Failed to load bio page:", err);
@@ -172,11 +155,11 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
 
     load();
     return () => { cancelled = true; };
-  }, [username]);
+  }, [activeBioId]);
 
   /* ── Auto-save: debounce 2s after last change ── */
   useEffect(() => {
-    if (!isDirty || !username) return;
+    if (!isDirty || !activeBioId) return;
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
@@ -224,6 +207,7 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
       isSmart: link.isSmart ?? false,
       fallbackUrl: link.fallbackUrl ?? "",
       isVisible: link.isVisible ?? true,
+      isActive: link.isActive ?? true,
       clicks: 0,
       order: 0,
       createdAt: null as unknown as BioLink["createdAt"],
@@ -287,14 +271,14 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
 
   /* ── Save to Firestore ── */
   const save = useCallback(async () => {
-    if (!username) return;
+    if (!activeBioId) return;
 
     setSaveStatus("saving");
 
     try {
       // Save page fields (excluding links — those go to subcollection)
       const { links: _links, ...pageFields } = data;
-      await updateBioPage(username, cleanData({
+      await updateBioPage(activeBioId, cleanData({
         displayName: pageFields.displayName,
         bio: pageFields.bio,
         avatarUrl: pageFields.avatarUrl,
@@ -302,10 +286,10 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
       }));
 
       // Save theme
-      await updateBioThemeDB(username, cleanData(data.theme));
+      await updateBioThemeDB(activeBioId, cleanData(data.theme));
 
       // Save social links
-      await updateSocialLinksDB(username, data.socialLinks.map(l => cleanData(l)));
+      await updateSocialLinksDB(activeBioId, data.socialLinks.map(l => cleanData(l)));
 
       // Diff links: find new, deleted, and existing
       const savedIds = new Set(savedData.links.map((l) => l.id));
@@ -316,7 +300,7 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
       for (const link of newLinks) {
         const { id: _id, createdAt: _ca, clicks: _cl, ...linkData } = link;
         const cleaned = cleanData(linkData);
-        const newId = await addBioLinkDB(username, cleaned);
+        const newId = await addBioLinkDB(activeBioId, cleaned);
         // Update local id to match Firestore-generated id
         link.id = newId;
       }
@@ -324,7 +308,7 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
       // Delete removed links (exist in saved but not in current)
       const deletedLinks = savedData.links.filter((l) => !currentIds.has(l.id));
       for (const link of deletedLinks) {
-        await deleteBioLinkDB(username, link.id);
+        await deleteBioLinkDB(activeBioId, link.id);
       }
 
       // Update existing links that changed
@@ -372,7 +356,7 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
             animationType: link.animationType ?? "buzz",
             redirectUntil: link.redirectUntil ?? null,
           });
-          await updateBioLinkDB(username, link.id, updates);
+          await updateBioLinkDB(activeBioId, link.id, updates);
         }
       }
 
@@ -381,7 +365,7 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
         .sort((a, b) => a.order - b.order)
         .map((l) => l.id);
       if (linkIds.length > 0) {
-        await reorderBioLinksDB(username, linkIds);
+        await reorderBioLinksDB(activeBioId, linkIds);
       }
 
       setSavedData({ ...data, links: data.links.map((l) => ({ ...l })) });
@@ -397,7 +381,7 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
       console.error("[BioEditor] Save failed:", err);
       setSaveStatus("error");
     }
-  }, [username, data, savedData]);
+  }, [activeBioId, data, savedData]);
 
   /* ── Reset to last saved ── */
   const reset = useCallback(() => {

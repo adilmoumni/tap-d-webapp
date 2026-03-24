@@ -38,7 +38,7 @@ export function IconSidebar() {
     <aside className="w-[72px] flex-shrink-0 bg-white border-r border-[#e8e6e2] flex flex-col items-center py-4">
       {/* Logo mark */}
       <div className="w-9 h-9 rounded-[10px] bg-[#0a0a0f] flex items-center justify-center mb-6 relative cursor-pointer flex-shrink-0">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#e8b86d] absolute" />
+        <img src="/logo/logo-icon-white.svg" alt="" />
       </div>
 
       {/* Nav items */}

@@ -31,10 +31,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
       return;
     }
 
-    // Redirect to claim page if user has no username
-    // (but don't redirect if already on the claim page)
-    if (profile && !profile.username && pathname !== "/d/claim-username") {
-      router.replace("/d/claim-username");
+    if (profile && !profile.activeBioId && pathname !== "/claim-username") {
+      router.replace("/claim-username");
+      return;
     }
   }, [user, profile, loading, router, pathname]);
 

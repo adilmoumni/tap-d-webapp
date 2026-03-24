@@ -36,7 +36,7 @@ function stripUndefined<T extends object>(obj: T): Partial<T> {
 
 export async function createLink(
   uid: string,
-  data: Omit<SmartLink, "id" | "uid" | "clickCount" | "createdAt" | "updatedAt">
+  data: Omit<SmartLink, "id" | "uid" | "clicks" | "createdAt" | "updatedAt">
 ): Promise<string> {
   const ref = await addDoc(collection(db, "links"), {
     ...stripUndefined(data),
@@ -132,7 +132,7 @@ export function subscribeToUserLinks(
    ================================================================ */
 
 export async function getBioByUsername(username: string): Promise<BioPage | null> {
-  const q = query(collection(db, "bio_pages"), where("username", "==", username));
+  const q = query(collection(db, "biopages"), where("slug", "==", username));
   const snap = await getDocs(q);
   if (snap.empty) return null;
   const d = snap.docs[0];
@@ -140,7 +140,7 @@ export async function getBioByUsername(username: string): Promise<BioPage | null
 }
 
 export async function getUserBioPage(uid: string): Promise<BioPage | null> {
-  const q = query(collection(db, "bio_pages"), where("uid", "==", uid));
+  const q = query(collection(db, "biopages"), where("ownerId", "==", uid));
   const snap = await getDocs(q);
   if (snap.empty) return null;
   const d = snap.docs[0];
@@ -149,20 +149,16 @@ export async function getUserBioPage(uid: string): Promise<BioPage | null> {
 
 export async function upsertBioPage(
   uid: string,
-  data: Partial<Omit<BioPage, "id" | "uid" | "createdAt">>
+  data: Partial<Omit<BioPage, "id" | "ownerId" | "createdAt">>
 ): Promise<void> {
   const existing = await getUserBioPage(uid);
   if (existing) {
-    await updateDoc(doc(db, "bio_pages", existing.id), {
+    await updateDoc(doc(db, "biopages", existing.id), {
       ...stripUndefined(data),
       updatedAt: serverTimestamp(),
     });
   } else {
-    await addDoc(collection(db, "bio_pages"), {
-      ...stripUndefined(data),
-      uid,
-      createdAt: serverTimestamp(),
-    });
+    throw new Error("Cannot update a bio page that does not exist. Claim a link first.");
   }
 }
 
@@ -170,7 +166,7 @@ export function subscribeToUserBio(
   uid: string,
   callback: (bio: BioPage | null) => void
 ): Unsubscribe {
-  const q = query(collection(db, "bio_pages"), where("uid", "==", uid));
+  const q = query(collection(db, "biopages"), where("ownerId", "==", uid));
   return onSnapshot(q, (snap) => {
     if (snap.empty) {
       callback(null);

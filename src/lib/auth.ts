@@ -46,12 +46,13 @@ export async function createUserProfile(user: User): Promise<void> {
 
   if (!snapshot.exists()) {
     // First sign-in: create the profile
-    const profile: Omit<UserProfile, "id"> = {
+    const profile = {
       uid:         user.uid,
       email:       user.email,
       displayName: user.displayName,
       photoURL:    user.photoURL,
       username:    null,
+      activeBioId: null,
       plan:        "free",
       createdAt:   serverTimestamp() as UserProfile["createdAt"],
     };

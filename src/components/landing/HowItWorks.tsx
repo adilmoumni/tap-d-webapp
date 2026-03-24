@@ -41,12 +41,12 @@ const tabs = [
         </div>
         <div className="flex gap-3 justify-center flex-wrap">
           {[
-            { label: "Apple Podcasts", icon: Apple },
-            { label: "Spotify", icon: Play },
-            { label: "Web Player", icon: Monitor },
+            { label: "Apple Podcasts", icon: '/apple_music_icon.png' },
+            { label: "Spotify", icon: '/spotify.png' },
+            { label: "Web Player", icon: '/web.png' },
           ].map((s) => (
             <div key={s.label} className="px-4 py-2.5 rounded-xl bg-white text-sm font-bold flex items-center gap-2 shadow-sm border border-border/10">
-              <s.icon size={16} strokeWidth={2.5} className="text-text-primary" />
+              <img src={s.icon} alt={s.label} className="w-8 h-8 rounded-[8px]" />
               {s.label}
             </div>
           ))}
