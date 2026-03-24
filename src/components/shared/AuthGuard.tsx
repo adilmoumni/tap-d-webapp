@@ -10,7 +10,7 @@ import { SkeletonCard } from "@/components/ui/Skeleton";
    Behavior:
    • loading  → show skeleton placeholder
    • no user  → redirect to /login
-   • no username → redirect to /d/claim-username
+   • incomplete profile (missing slug/active bio) → redirect to /claim-username
    • user     → render children
 ------------------------------------------------------------------ */
 
@@ -31,7 +31,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
       return;
     }
 
-    if (profile && !profile.username && pathname !== "/claim-username") {
+    if (pathname === "/claim-username") return;
+
+    if (!profile || !profile.username || !profile.activeBioId) {
       router.replace("/claim-username");
       return;
     }
@@ -49,6 +51,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   if (!user) return null;
+
+  if (!profile && pathname !== "/claim-username") return null;
 
   return <>{children}</>;
 }

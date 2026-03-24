@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { signInWithGoogle, signUpWithEmail } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { Smartphone, Target, AreaChart } from "lucide-react";
+import { Smartphone, Target, AreaChart, Dices } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 /* ------------------------------------------------------------------
@@ -25,12 +25,17 @@ function GoogleIcon() {
   );
 }
 
+function randomSlug() {
+  return `user-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export default function SignupPage() {
   const router  = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const [name, setName]       = useState("");
   const [email, setEmail]     = useState("");
+  const [slug, setSlug]       = useState(randomSlug());
   const [password, setPassword] = useState("");
   const { user, loading: authLoading } = useAuth();
 
@@ -59,13 +64,15 @@ export default function SignupPage() {
     setLoading(true);
     setError(null);
     try {
-      await signUpWithEmail(email, password, name);
+      await signUpWithEmail(email, password, name, slug);
       router.replace("/d/dashboard");
     } catch (err: any) {
       if (err.code === "auth/email-already-in-use") {
         setError("This email is already registered. Please sign in instead.");
       } else if (err.code === "auth/weak-password") {
         setError("Password should be at least 6 characters.");
+      } else if (/slug/i.test(String(err?.message || ""))) {
+        setError(err.message);
       } else {
         setError("Failed to create account. Please try again.");
       }
@@ -86,14 +93,14 @@ export default function SignupPage() {
         <h1 className="font-serif text-3xl font-bold text-text-primary mb-3">
           Claim your page
         </h1>
-        <p className="text-text-muted">Choose your username and start sharing smarter.</p>
+        <p className="text-text-muted">Choose your slug and start sharing smarter.</p>
       </div>
 
       {/* Feature highlights */}
       <div className="mb-10 space-y-4">
         {[
           { icon: Target, text: "Smart device routing on every link", color: "text-accent-pink bg-accent-pink/5" },
-          { icon: Smartphone, text: "Beautiful bio page at tap-d.link/@you", color: "text-accent-mint bg-accent-mint/5" },
+          { icon: Smartphone, text: "Beautiful bio page at tap-d.link/your-slug", color: "text-accent-mint bg-accent-mint/5" },
           { icon: AreaChart, text: "Real-time analytics dashboard", color: "text-accent-blue bg-accent-blue/5" },
         ].map((item, idx) => (
           <motion.div 
@@ -131,6 +138,32 @@ export default function SignupPage() {
           disabled={loading}
           className="w-full px-4 py-3 rounded-2xl border-2 border-border bg-white text-sm font-medium focus:border-lavender focus:outline-none transition-colors"
         />
+        <div className="flex gap-2">
+          <div className="flex-1 flex items-center rounded-2xl border-2 border-border bg-white">
+            <span className="pl-4 pr-2 text-sm text-text-muted font-mono">tap-d.link/</span>
+            <input
+              type="text"
+              placeholder="your-slug"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))}
+              required
+              minLength={3}
+              maxLength={30}
+              disabled={loading}
+              className="flex-1 py-3 pr-4 rounded-r-2xl bg-white text-sm font-medium focus:outline-none"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setSlug(randomSlug())}
+            disabled={loading}
+            className="px-3 rounded-2xl border-2 border-border bg-white hover:bg-lavender-light transition-colors disabled:opacity-60"
+            aria-label="Generate slug"
+            title="Generate slug"
+          >
+            <Dices size={18} />
+          </button>
+        </div>
         <input
           type="password"
           placeholder="Password (min 6 characters)"
@@ -144,7 +177,7 @@ export default function SignupPage() {
 
         <button
           type="submit"
-          disabled={loading || !name || !email || password.length < 6}
+          disabled={loading || !name || !email || !slug || slug.length < 3 || password.length < 6}
           className={cn(
             "w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl",
             "bg-dark text-text-on-dark font-bold text-base border-2 border-transparent",

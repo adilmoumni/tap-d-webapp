@@ -186,9 +186,9 @@ export function SmartLinkForm({
       const promises = [];
       promises.push(setDoc(doc(db, "links", slug.trim()), newLink, { merge: true }));
 
-      if (profile?.username && addToBio) {
+      if (profile?.activeBioId && addToBio) {
         promises.push(
-          setDoc(doc(db, "biopages", profile.username, "links", linkId), newLink, { merge: true })
+          setDoc(doc(db, "biopages", profile.activeBioId, "links", linkId), newLink, { merge: true })
         );
       }
 
@@ -482,7 +482,7 @@ export function SmartLinkForm({
          <div className="flex items-center justify-between mt-2">
             <div>
                <div className="text-[13px] font-semibold text-[#1a1a2e]">Add to bio page</div>
-               <div className="text-[11px] text-[#8a8a9a]">Show this link on tap-d.link/@{profile?.username || "your-username"}</div>
+               <div className="text-[11px] text-[#8a8a9a]">Show this link on tap-d.link/{profile?.username || "your-slug"}</div>
             </div>
             <div 
               role="switch" 

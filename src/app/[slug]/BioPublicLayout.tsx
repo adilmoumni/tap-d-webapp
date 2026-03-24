@@ -122,8 +122,8 @@ export default function BioPublicLayout({ children, slug, bioId, ownerId }: BioP
             View on mobile
           </span>
           <QRPreview 
-            url={`${typeof window !== 'undefined' ? window.location.origin : 'https://tap-d.link'}/${slug.startsWith('@') ? slug : '@' + slug}`} 
-            label={`tap-d.link/${slug.startsWith('@') ? slug : '@' + slug}`}
+            url={`${typeof window !== 'undefined' ? window.location.origin : 'https://tap-d.link'}/${slug}`} 
+            label={`tap-d.link/${slug}`}
             size={150}
             showDownload={false}
             variant="minimal"

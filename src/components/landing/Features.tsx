@@ -48,7 +48,7 @@ const features: Feature[] = [
   },
   {
     icon: User, title: "Link-in-Bio Page",
-    description: "Beautiful profile page at tap-d.link/@you. All your links in one place with smart routing built into each one.",
+    description: "Beautiful profile page at tap-d.link/you. All your links in one place with smart routing built into each one.",
     badge: "free", color: "#fce8f0", hover: "#f8d4e4",
   },
   {

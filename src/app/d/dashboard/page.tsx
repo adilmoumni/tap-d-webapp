@@ -112,7 +112,7 @@ function OverviewPanel() {
         <div>
           <h2 className="text-[15px] font-semibold text-[#1a1a2e]">Analytics overview</h2>
           {profile?.username && (
-            <p className="text-[11px] text-[#8a8a9a] mt-0.5">@{profile.username}</p>
+            <p className="text-[11px] text-[#8a8a9a] mt-0.5">/{profile.username}</p>
           )}
         </div>
       </div>

@@ -28,7 +28,7 @@ export function CTA() {
           should be <em className="not-italic italic">too.</em>
         </h2>
         <p className="text-text-secondary text-[1.05rem] max-w-[480px] mx-auto leading-[1.7] mb-8">
-          Claim your @username and create your smart bio page in under 2 minutes. Free forever.
+          Claim your custom slug and create your smart bio page in under 2 minutes. Free forever.
         </p>
         <Button variant="primary" size="lg" dot asChild className="font-bold px-8 xl:min-w-[200px] hover:-translate-y-1 transition-transform">
           <Link href={user ? "/d/dashboard" : "/signup"}>{user ? "Go to Dashboard" : "Claim Your Page"}</Link>

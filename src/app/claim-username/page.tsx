@@ -4,10 +4,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { createBioPage } from "@/lib/db/bio";
-import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Dices } from "lucide-react";
 import { AuthGuard } from "@/components/shared/AuthGuard";
+import {
+  generateUniquePublicSlug,
+  isPublicSlugAvailable,
+  isValidPublicSlug,
+  normalizePublicSlug,
+} from "@/lib/slug";
 
 /* ------------------------------------------------------------------
    Claim Username — shown after first sign-up when profile.username
@@ -30,22 +36,22 @@ export default function ClaimUsernamePage() {
     }
   }, [profile?.username, router]);
 
-  const normalized = username.toLowerCase().replace(/[^a-z0-9_.-]/g, "");
+  const normalized = normalizePublicSlug(username);
 
-  const handleRandomize = () => {
-    const randomStr = Math.random().toString(36).substring(2, 6);
-    setUsername(`user-${randomStr}`);
+  const handleRandomize = async () => {
+    const generated = await generateUniquePublicSlug("user");
+    setUsername(generated);
     setError(null);
   };
 
   const handleClaim = async () => {
-    if (!user || !normalized || normalized.length < 3) {
-      setError("Username must be at least 3 characters (letters, numbers, _, ., -)");
+    if (!user) {
+      setError("Please sign in first.");
       return;
     }
 
-    if (normalized.length > 30) {
-      setError("Username must be 30 characters or less");
+    if (!isValidPublicSlug(normalized)) {
+      setError("Slug must be 3-30 chars and use lowercase letters, numbers, dot, dash, or underscore.");
       return;
     }
 
@@ -53,19 +59,9 @@ export default function ClaimUsernamePage() {
     setChecking(true);
 
     try {
-      // Check availability in usernames
-      const usernameDoc = await getDoc(doc(db, "usernames", normalized));
-      if (usernameDoc.exists()) {
-        setError(`@${normalized} is already taken. Try another.`);
-        setChecking(false);
-        return;
-      }
-
-      // Also check if a bio page exists with that slug
-      const bioQ = query(collection(db, "biopages"), where("slug", "==", normalized));
-      const bioDocs = await getDocs(bioQ);
-      if (!bioDocs.empty) {
-        setError(`@${normalized} is already taken. Try another.`);
+      const available = await isPublicSlugAvailable(normalized);
+      if (!available) {
+        setError(`${normalized} is already taken. Try another.`);
         setChecking(false);
         return;
       }
@@ -100,15 +96,15 @@ export default function ClaimUsernamePage() {
     <AuthGuard>
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-full max-w-md px-6">
-          <h1 className="text-[22px] font-bold text-[#1a1a2e] mb-2">Claim your username</h1>
+          <h1 className="text-[22px] font-bold text-[#1a1a2e] mb-2">Claim your slug</h1>
           <p className="text-[14px] text-[#8a8a9a] mb-8">
-            This will be your public bio page URL: tap-d.link/@username
+            This will be your public bio page URL: tap-d.link/username
           </p>
 
           {/* Input */}
           <div className="flex items-center gap-0 mb-3">
             <span className="px-4 py-3 bg-[#f5f3f0] border border-r-0 border-[#e8e6e2] rounded-l-[12px] text-[14px] text-[#8a8a9a] font-mono select-none">
-              tap-d.link/@
+              tap-d.link/
             </span>
             <input
               type="text"
@@ -145,7 +141,7 @@ export default function ClaimUsernamePage() {
             disabled={normalized.length < 3 || checking || saving}
             className="w-full mt-2 py-3 rounded-[12px] bg-[#0a0a0f] text-white text-[14px] font-semibold hover:bg-[#1a1a2e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {checking ? "Checking availability..." : saving ? "Creating your page..." : "Claim @" + (normalized || "username")}
+            {checking ? "Checking availability..." : saving ? "Creating your page..." : "Claim /" + (normalized || "username")}
           </button>
 
           <p className="mt-4 text-[11px] text-[#8a8a9a] text-center">

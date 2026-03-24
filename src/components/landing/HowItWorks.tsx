@@ -32,7 +32,7 @@ const tabs = [
     visual: (
       <div className="text-center">
         <div className="font-mono text-[0.75rem] px-4 py-2 bg-white rounded-full inline-block mb-4 text-text-muted border border-border/10 shadow-sm uppercase tracking-wider font-bold">
-          tap-d.link/@emma → Podcast
+          tap-d.link/emma → Podcast
         </div>
         <div className="text-accent-pink my-3 flex justify-center">
           <motion.div animate={{ y: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
@@ -58,7 +58,7 @@ const tabs = [
     label: "Bio Pages",
     chip: "Bio Pages",
     heading: "Your link in bio, but smarter",
-    body: "Create a stunning bio page at tap-d.link/@you. Customize colors, add your links, and share one URL everywhere. Every link auto-detects the visitor's device.",
+    body: "Create a stunning bio page at tap-d.link/you. Customize colors, add your links, and share one URL everywhere. Every link auto-detects the visitor's device.",
     visual: (
       <div className="text-center">
         <div className="inline-flex flex-col gap-2.5 w-56">
@@ -103,7 +103,7 @@ const tabs = [
       <div className="flex flex-col items-center gap-5">
         <div className="relative group p-4 bg-white rounded-[32px] shadow-2xl border border-accent-pink/20">
           <QRCode 
-            value="https://tap-d.link/@emma" 
+            value="https://tap-d.link/emma" 
             size={160} 
             logo={true} 
             className="rounded-2xl"

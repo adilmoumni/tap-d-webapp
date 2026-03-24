@@ -18,7 +18,7 @@ import Link from "next/link";
 
 const checks = [
   { icon: Check, color: "bg-[#f0e8fc]", iconColor: "text-[#8b5cf6]", text: "Smart routing on every link — iOS, Android, Desktop" },
-  { icon: Check, color: "bg-[#fce8f0]", iconColor: "text-[#e8457c]", text: "Beautiful customizable bio page at tap-d.link/@you" },
+  { icon: Check, color: "bg-[#fce8f0]", iconColor: "text-[#e8457c]", text: "Beautiful customizable bio page at tap-d.link/you" },
   { icon: Check, color: "bg-[#e8fcf0]", iconColor: "text-[#059669]", text: "Real-time analytics — see who taps, from where, on what" },
   { icon: Check, color: "bg-[#e8f0fc]", iconColor: "text-[#2563eb]", text: "QR code for every link — print, share, scan" },
 ];
@@ -94,7 +94,7 @@ export function BioShowcase() {
 
           <div className="flex flex-wrap gap-4">
             <Button variant="primary" size="lg" asChild className="px-8 font-bold text-[0.95rem]">
-              <Link href={user ? "/d/dashboard" : "/signup"}>{user ? "Go to Dashboard" : "Claim Your @username"}</Link>
+              <Link href={user ? "/d/dashboard" : "/signup"}>{user ? "Go to Dashboard" : "Claim Your Slug"}</Link>
             </Button>
           </div>
         </motion.div>

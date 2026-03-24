@@ -127,7 +127,7 @@ export function FloatingCards() {
       >
         <div className="bg-white p-2 rounded-2xl shadow-sm">
           <QRCode 
-            value="https://tap-d.link/@emma" 
+            value="https://tap-d.link/emma" 
             size={88} 
             logo={true} 
             className="rounded-lg shadow-none"

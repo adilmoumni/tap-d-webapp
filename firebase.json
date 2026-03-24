@@ -17,24 +17,16 @@
     ],
     "rewrites": [
       {
-        "source": "/u/:username",
-        "destination": "/u/placeholder.html"
-      },
-      {
-        "source": "/links/:slug",
+        "source": "/links/**",
         "destination": "/links/placeholder.html"
       },
       {
-        "source": "/d/links/:slug",
+        "source": "/d/links/**",
         "destination": "/d/links/placeholder.html"
       },
       {
-        "source": "/:slug",
-        "destination": "/placeholder.html"
-      },
-      {
         "source": "**",
-        "destination": "/index.html"
+        "destination": "/placeholder.html"
       }
     ]
   }

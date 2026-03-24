@@ -44,7 +44,7 @@ export const PLANS: Plan[] = [
       analyticsRetentionDays: 365,
     },
     features: [
-      { label: "1 bio page (tap-d.link/@you)" },
+      { label: "1 bio page (tap-d.link/you)" },
       { label: "10 smart links" },
       { label: "5,000 clicks / month" },
       { label: "Analytics (1 year)" },

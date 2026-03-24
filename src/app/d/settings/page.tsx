@@ -3,11 +3,15 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "@/lib/auth";
+import { createBioPage } from "@/lib/db/bio";
 import { changeUsername } from "@/lib/db/bio";
+import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PLANS } from "@/config/plans";
+import { collection, doc, getDoc, getDocs, limit, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { isValidPublicSlug, normalizePublicSlug } from "@/lib/slug";
 
 export default function SettingsPage() {
   const { user, profile } = useAuth();
@@ -34,14 +38,10 @@ export default function SettingsPage() {
 
   const handleSaveUsername = async () => {
     if (!user || !profile) return;
-    const normalized = usernameDraft.toLowerCase().replace(/[^a-z0-9_.-]/g, "");
+    const normalized = normalizePublicSlug(usernameDraft);
     
-    if (normalized.length < 3) {
-      setUsernameError("Must be at least 3 characters.");
-      return;
-    }
-    if (normalized.length > 30) {
-      setUsernameError("Must be 30 characters or less.");
+    if (!isValidPublicSlug(normalized)) {
+      setUsernameError("Slug must be 3-30 chars and use lowercase letters, numbers, dot, dash, or underscore.");
       return;
     }
     if (normalized === currentUsername) {
@@ -49,16 +49,57 @@ export default function SettingsPage() {
       return;
     }
 
-    if (!profile.activeBioId) {
-      setUsernameError("No active bio page found to update.");
-      return;
-    }
-
     setSavingUsername(true);
     setUsernameError("");
     try {
-      await changeUsername(user.uid, profile.activeBioId, currentUsername, normalized);
+      let activeBioId = profile.activeBioId ?? null;
+
+      // Legacy safety: recover activeBioId when missing.
+      if (!activeBioId && currentUsername) {
+        const q = query(collection(db, "biopages"), where("slug", "==", currentUsername), limit(1));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          activeBioId = snap.docs[0].id;
+          await updateDoc(doc(db, "users", user.uid), {
+            activeBioId,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          const usernameSnap = await getDoc(doc(db, "usernames", currentUsername));
+          const linkedBioId = usernameSnap.exists() ? (usernameSnap.data()?.bioId as string | undefined) : undefined;
+          if (linkedBioId) {
+            activeBioId = linkedBioId;
+            await updateDoc(doc(db, "users", user.uid), {
+              activeBioId,
+              updatedAt: serverTimestamp(),
+            });
+          }
+        }
+      }
+
+      if (!activeBioId) {
+        // Self-heal: create a new active bio page using the requested slug.
+        activeBioId = await createBioPage(user.uid, normalized, {
+          displayName: profile.displayName ?? user.displayName ?? normalized,
+          avatarUrl: profile.photoURL ?? user.photoURL ?? null,
+          bio: "",
+        });
+
+        await updateDoc(doc(db, "users", user.uid), {
+          username: normalized,
+          activeBioId,
+          updatedAt: serverTimestamp(),
+        });
+
+        setEditingUsername(false);
+        window.location.reload();
+        return;
+      }
+
+      await changeUsername(user.uid, activeBioId, currentUsername, normalized);
       setEditingUsername(false);
+      // `useAuth` profile is not realtime yet; force refresh so UI shows new slug immediately.
+      window.location.reload();
     } catch (err: any) {
       setUsernameError(err.message || "Failed to update username");
     } finally {
@@ -111,7 +152,7 @@ export default function SettingsPage() {
           <div className="space-y-3">
             <div className="flex items-center gap-0">
               <span className="px-3 py-2 bg-background border border-r-0 border-border rounded-l-lg text-sm text-text-secondary font-mono">
-                tap-d.link/@
+                tap-d.link/
               </span>
               <input 
                 type="text"
@@ -136,7 +177,7 @@ export default function SettingsPage() {
         ) : (
           <div className="flex items-center gap-2 p-3 bg-background rounded-lg border border-border overflow-hidden">
             <span className="text-text-secondary font-mono text-sm max-w-full truncate">
-              tap-d.link/@<span className="font-semibold text-text-primary">{currentUsername}</span>
+              tap-d.link/<span className="font-semibold text-text-primary">{currentUsername}</span>
             </span>
           </div>
         )}
@@ -170,4 +211,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

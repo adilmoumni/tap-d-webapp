@@ -12,7 +12,7 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  username: string | null;        // chosen @username for bio page
+  username: string | null;        // chosen slug for bio page
   activeBioId?: string | null;    // pointer to primary bio doc
   plan: PlanId;
   createdAt: Timestamp | Date;
@@ -54,7 +54,7 @@ export interface SocialLink {
 export interface BioPage {
   id: string;
   ownerId: string;
-  slug: string;                   // e.g. "mybio" for @ URL
+  slug: string;                   // e.g. "mybio" for /mybio URL
   displayName: string;
   bio?: string;
   avatarUrl?: string;

@@ -187,7 +187,7 @@ export function BioEditor() {
   };
 
   const previewUrl = username
-    ? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/@${username}`
+    ? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/${username}`
     : null;
 
   /* ---- Active / inactive link split ---- */
@@ -225,7 +225,7 @@ export function BioEditor() {
           <Input
             value={username}
             readOnly
-            prefix="tap-d.link/@"
+            prefix="tap-d.link/"
             placeholder="yourname"
             mono
             disabled

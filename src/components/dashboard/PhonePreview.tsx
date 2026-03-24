@@ -24,18 +24,18 @@ export function PhonePreview() {
   const domain = process.env.NEXT_PUBLIC_APP_URL || "https://tap-d.link";
   const domainWithoutProtocol = domain.replace("https://", "").replace("http://", "");
   const slug = data.slug || "";
-  const bioUrl = slug ? `${domain}/@${slug}` : null;
-  const bioLabel = slug ? `@${slug}` : "@your-username";
+  const bioUrl = slug ? `${domain}/${slug}` : null;
+  const bioLabel = slug ? slug : "your-slug";
 
   return (
     <aside className="w-[360px] flex-shrink-0 bg-[#f5f3f0] border-l border-[#e8e6e2] flex flex-col items-center px-4 py-5 overflow-y-auto">
       {/* URL bar */}
       <a
         className="flex items-center gap-2 w-full px-3.5 py-[7px] bg-white border border-[#e8e6e2] rounded-full text-[11px] text-[#1a1a2e] mb-4 shadow-sm"
-        href={`${domain}/@${slug}`}
+        href={`${domain}/${slug}`}
         target="_blank"
       >
-        <span className="font-medium">{domainWithoutProtocol}/@{slug}</span>
+        <span className="font-medium">{domainWithoutProtocol}/{slug}</span>
         <Share2 size={14} className="ml-auto opacity-30 cursor-pointer flex-shrink-0" />
       </a>
 

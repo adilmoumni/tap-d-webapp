@@ -144,7 +144,7 @@ export function BioPhonePreview({
               {displayName || "Your Name"}
             </p>
             <p className={cn("text-[0.6rem] font-medium mt-0.5 uppercase tracking-wider", t.sub)}>
-              {username ? `@${username}` : "@username"}
+              {username ? `/${username}` : "/username"}
             </p>
           </div>
 

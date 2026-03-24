@@ -8,10 +8,15 @@ import RedirectClient from "./RedirectClient";
 import BioPublicLayout from "./BioPublicLayout";
 import type { BioPageData } from "@/types/bio";
 
-// Resolve the raw slug whether the path is /adil or /@adil
+// Resolve slug from URL segment (/slug only)
 function rawSlug(slug: string): string {
-  const decoded = decodeURIComponent(slug);
-  return decoded.startsWith("@") ? decoded.slice(1) : decoded;
+  return decodeURIComponent(slug);
+}
+
+function slugFromPathname(pathname: string): string {
+  const parts = pathname.split("/").filter(Boolean);
+  const last = parts[parts.length - 1] || "";
+  return rawSlug(last);
 }
 
 export default function BioClientPage({ params }: { params: any }) {
@@ -19,12 +24,10 @@ export default function BioClientPage({ params }: { params: any }) {
   const resolvedParams = use(params) as { slug: string };
 
   useEffect(() => {
-    if (resolvedParams?.slug) {
+    if (resolvedParams?.slug && resolvedParams.slug !== "placeholder") {
       setName(rawSlug(resolvedParams.slug));
     } else if (typeof window !== "undefined") {
-      const path = window.location.pathname;
-      const slug = path.split("/").pop() || "";
-      setName(rawSlug(slug));
+      setName(slugFromPathname(window.location.pathname));
     }
   }, [resolvedParams]);
 

@@ -7,7 +7,6 @@
 import {
   doc,
   getDoc,
-  setDoc,
   updateDoc,
   collection,
   query,
@@ -18,11 +17,13 @@ import {
   writeBatch,
   serverTimestamp,
   where,
-  limit
+  limit,
+  runTransaction,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { BioPageData, BioLink, BioSocialLink, BioTheme } from "@/types/bio";
 import { DEFAULT_THEME } from "@/types/bio";
+import { isPublicSlugAvailable, isValidPublicSlug, normalizePublicSlug } from "@/lib/slug";
 
 /* ================================================================
    READ
@@ -73,12 +74,22 @@ export async function createBioPage(
   slug: string,
   data: Partial<BioPageData> = {}
 ): Promise<string> {
+  const normalizedSlug = normalizePublicSlug(slug);
+  if (!isValidPublicSlug(normalizedSlug)) {
+    throw new Error("Slug must be 3-30 chars and use lowercase letters, numbers, dot, dash, or underscore.");
+  }
+
+  const available = await isPublicSlugAvailable(normalizedSlug);
+  if (!available) {
+    throw new Error("This slug is already taken.");
+  }
+
   const now = serverTimestamp();
 
   const pageData = {
-    slug,
+    slug: normalizedSlug,
     ownerId: uid,
-    displayName: data.displayName ?? slug,
+    displayName: data.displayName ?? normalizedSlug,
     bio: data.bio ?? "",
     avatarUrl: data.avatarUrl ?? null,
     socialLinks: data.socialLinks ?? [],
@@ -88,11 +99,19 @@ export async function createBioPage(
     updatedAt: now,
   };
 
-  // Write bio page doc
-  const ref = await addDoc(collection(db, "biopages"), pageData);
+  const ref = doc(collection(db, "biopages"));
+  const usernameRef = doc(db, "usernames", normalizedSlug);
+  const linkRef = doc(db, "links", normalizedSlug);
 
-  // Reserve the username for uniqueness lookups
-  await setDoc(doc(db, "usernames", slug), { uid, bioId: ref.id });
+  await runTransaction(db, async (tx) => {
+    const [usernameSnap, linkSnap] = await Promise.all([tx.get(usernameRef), tx.get(linkRef)]);
+    if (usernameSnap.exists() || linkSnap.exists()) {
+      throw new Error("This slug is already taken.");
+    }
+
+    tx.set(ref, pageData);
+    tx.set(usernameRef, { uid, bioId: ref.id });
+  });
 
   return ref.id;
 }
@@ -188,40 +207,51 @@ export async function changeUsername(
   oldSlug: string,
   newSlug: string
 ): Promise<void> {
-  const newNormalized = newSlug.toLowerCase().replace(/[^a-z0-9_.-]/g, "");
-  
-  // 1. Check availability
-  const usernameDoc = await getDoc(doc(db, "usernames", newNormalized));
-  if (usernameDoc.exists()) {
-    throw new Error(`@${newNormalized} is already taken.`);
+  const newNormalized = normalizePublicSlug(newSlug);
+  if (!isValidPublicSlug(newNormalized)) {
+    throw new Error("Slug must be 3-30 chars and use lowercase letters, numbers, dot, dash, or underscore.");
   }
 
-  const q = query(collection(db, "biopages"), where("slug", "==", newNormalized), limit(1));
-  const bioSnap = await getDocs(q);
-  if (!bioSnap.empty) {
-    throw new Error(`@${newNormalized} is already taken.`);
+  const available = await isPublicSlugAvailable(newNormalized, { excludeUid: uid, excludeBioId: bioId });
+  if (!available) {
+    throw new Error("This slug is already taken.");
   }
 
-  const batch = writeBatch(db);
+  const bioRef = doc(db, "biopages", bioId);
+  const userRef = doc(db, "users", uid);
+  const newUsernameRef = doc(db, "usernames", newNormalized);
+  const oldNormalized = normalizePublicSlug(oldSlug);
+  const oldUsernameRef = oldNormalized ? doc(db, "usernames", oldNormalized) : null;
+  const linkRef = doc(db, "links", newNormalized);
 
-  // 2. Update slug in biopage
-  batch.update(doc(db, "biopages", bioId), {
-    slug: newNormalized,
-    updatedAt: serverTimestamp(),
+  await runTransaction(db, async (tx) => {
+    const [newUsernameSnap, linkSnap] = await Promise.all([tx.get(newUsernameRef), tx.get(linkRef)]);
+
+    if (linkSnap.exists()) {
+      throw new Error("This slug is already taken.");
+    }
+
+    if (newUsernameSnap.exists()) {
+      const existingUid = newUsernameSnap.data()?.uid as string | undefined;
+      if (existingUid !== uid) {
+        throw new Error("This slug is already taken.");
+      }
+    }
+
+    tx.update(bioRef, {
+      slug: newNormalized,
+      updatedAt: serverTimestamp(),
+    });
+
+    tx.update(userRef, {
+      username: newNormalized,
+      updatedAt: serverTimestamp(),
+    });
+
+    tx.set(newUsernameRef, { uid, bioId });
+
+    if (oldUsernameRef && oldNormalized !== newNormalized) {
+      tx.delete(oldUsernameRef);
+    }
   });
-
-  // 3. Update users document
-  batch.update(doc(db, "users", uid), {
-    username: newNormalized,
-    updatedAt: serverTimestamp(),
-  });
-
-  // 4. Reserve new username, delete old username
-  batch.set(doc(db, "usernames", newNormalized), { uid, bioId });
-  if (oldSlug) {
-    batch.delete(doc(db, "usernames", oldSlug));
-  }
-
-  // Commit transaction
-  await batch.commit();
 }

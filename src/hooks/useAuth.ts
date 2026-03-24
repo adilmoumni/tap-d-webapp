@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { User } from "firebase/auth";
-import { onAuthChange, getUserProfile } from "@/lib/auth";
+import { onAuthChange, ensureUserProfile } from "@/lib/auth";
 import type { UserProfile } from "@/types";
 
 /* ------------------------------------------------------------------
@@ -32,7 +32,7 @@ export function useAuth(): UseAuthReturn {
         setUser(firebaseUser);
 
         if (firebaseUser) {
-          const p = await getUserProfile(firebaseUser.uid);
+          const p = await ensureUserProfile(firebaseUser);
           setProfile(p);
         } else {
           setProfile(null);
