@@ -68,9 +68,9 @@ export function Footer() {
 
         {/* Legal links */}
         <div className="flex gap-6 text-[0.82rem] text-text-on-dark/55">
-          <Link href="/legal/privacy" className="hover:text-text-on-dark transition-colors">Privacy</Link>
-          <Link href="/legal/terms" className="hover:text-text-on-dark transition-colors">Terms</Link>
-          <Link href="mailto:hello@tap-d.link" className="hover:text-text-on-dark transition-colors">Contact</Link>
+          {["Privacy", "Terms", "Imprint"].map((l) => (
+            <Link key={l} href="#" className="hover:text-text-on-dark transition-colors">{l}</Link>
+          ))}
         </div>
 
         {/* Copyright */}

@@ -33,7 +33,6 @@ import { findPlatform } from "@/lib/platforms";
 import Image from "next/image";
 import type { BioLink } from "@/types/bio";
 import { QRPreview } from "@/components/dashboard/qr/QRPreview";
-import { normalizeOutboundUrl } from "@/lib/url-safety";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://tap-d.link";
 
@@ -159,7 +158,12 @@ function PlatformBadge({ title, size = 36 }: { title: string; size?: number }) {
 ───────────────────────────────────────────── */
 
 function isValidUrl(str: string): boolean {
-  return !!normalizeOutboundUrl(str, { allowRelative: true });
+  try {
+    const url = new URL(str);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function InlineEdit({
@@ -484,8 +488,8 @@ function ThumbnailPanel({
 type LockType = "none" | "code" | "password" | "sensitive";
 
 const LOCK_OPTIONS: { type: LockType; label: string; desc: string; icon: React.ElementType }[] = [
-  { type: "code",      label: "Code",               desc: "Visitors must enter a numeric code to view this link.",                                                       icon: Hash },
-  { type: "password",  label: "Access phrase",      desc: "Visitors must enter a custom phrase for this link. Never ask for account passwords.",                        icon: KeyRound },
+  { type: "code",      label: "Code",              desc: "Visitors must enter a numeric code to view this link.",                                                       icon: Hash },
+  { type: "password",  label: "Password",           desc: "Visitors must enter a password to view this link.",                                                           icon: KeyRound },
   { type: "sensitive", label: "Sensitive content",   desc: "Visitors must acknowledge that this link may contain content that is not appropriate for all audiences.", icon: ShieldAlert },
 ];
 
@@ -578,7 +582,7 @@ function LockPanel({
                   <div className="mt-2 ml-11">
                     <input
                       type="text"
-                      placeholder="Enter access phrase"
+                      placeholder="Enter password"
                       value={link.lockPassword ?? ""}
                       onChange={(e) => onUpdate(link.id, { lockPassword: e.target.value })}
                       className="w-full px-3 py-2 border border-[#e8e6e2] rounded-[8px] text-[12px] outline-none focus:border-[#e8b86d] transition-colors"
@@ -1025,7 +1029,7 @@ function SortableLinkCard({
 
 
   const linkUrl = link.url || link.fallbackUrl || "";
-  const hasValidUrl = linkUrl ? isValidUrl(linkUrl) : false;
+  const hasValidUrl = linkUrl ? isValidUrl(linkUrl.startsWith("http") ? linkUrl : "https://" + linkUrl) : false;
   const isComplete = !!link.title.trim() && hasValidUrl;
 
   const {
@@ -1078,14 +1082,18 @@ function SortableLinkCard({
           <InlineEdit
             value={link.url || link.fallbackUrl || ""}
             onSave={(val) => {
-              const normalized = normalizeOutboundUrl(val, { allowRelative: true });
-              if (!normalized) return;
-              onUpdate(link.id, { url: normalized, fallbackUrl: normalized });
+              let url = val.trim();
+              if (url && !url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "https://" + url;
+              }
+              onUpdate(link.id, { url, fallbackUrl: url });
             }}
             validate={(val) => {
-              return normalizeOutboundUrl(val, { allowRelative: true })
-                ? ""
-                : "Please enter a valid URL (http/https)";
+              let url = val;
+              if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "https://" + url;
+              }
+              return isValidUrl(url) ? "" : "Please enter a valid URL";
             }}
             className="text-[12px] text-[#8a8a9a] font-mono"
             placeholder="https://..."

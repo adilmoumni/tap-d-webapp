@@ -83,7 +83,6 @@ export default function LoginPage() {
           Welcome back
         </h1>
         <p className="text-text-muted">Sign in to manage your smart links and bio page.</p>
-        <p className="text-[11px] text-text-muted mt-2">Only sign in on tap-d.link.</p>
       </div>
 
       {/* Google sign-in */}
@@ -131,8 +130,6 @@ export default function LoginPage() {
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <input
             type="email"
-            name="email"
-            autoComplete="email"
             placeholder="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -142,8 +139,6 @@ export default function LoginPage() {
           />
           <input
             type="password"
-            name="password"
-            autoComplete="current-password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

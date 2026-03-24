@@ -15,7 +15,6 @@ export default function robots(): MetadataRoute.Robots {
         "/settings",
         "/links/",
         "/d/",
-        "/out",
         "/login",
         "/signup",
         "/claim-username",

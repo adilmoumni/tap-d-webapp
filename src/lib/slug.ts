@@ -9,13 +9,9 @@ const RESERVED_SLUGS = new Set([
   "dashboard",
   "links",
   "login",
-  "out",
   "pricing",
-  "privacy",
   "settings",
   "signup",
-  "terms",
-  "legal",
   "_next",
 ]);
 

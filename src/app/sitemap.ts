@@ -7,16 +7,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://tap-d.link";
 
   // Public, indexable routes only
-  const routes = ["", "/pricing", "/legal/privacy", "/legal/terms"].map((route) => ({
+  const routes = ["", "/pricing"].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
-    changeFrequency:
-      route === ""
-        ? ("daily" as const)
-        : route === "/pricing"
-          ? ("weekly" as const)
-          : ("monthly" as const),
-    priority: route === "" ? 1 : route === "/pricing" ? 0.9 : 0.3,
+    changeFrequency: route === "" ? ("daily" as const) : ("weekly" as const),
+    priority: route === "" ? 1 : 0.9,
   }));
 
   let dynamicRoutes: MetadataRoute.Sitemap = [];
