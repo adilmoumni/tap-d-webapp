@@ -114,7 +114,7 @@ export function BioVisitorsTab() {
       getRecentBioVisitors(bioId, 50),
     ])
       .then(([s, v]) => { setStats(s); setVisitors(v); })
-      .catch(() => setError("Could not load analytics."))
+      .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [bioId]);
 

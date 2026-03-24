@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { signInWithGoogle } from "@/lib/auth";
+import { signInWithGoogle, signInWithEmail } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -28,6 +28,8 @@ export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
+  const [email, setEmail]     = useState("");
+  const [password, setPassword] = useState("");
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
@@ -45,6 +47,24 @@ export default function LoginPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign-in failed. Try again.";
       if (!msg.includes("popup-closed-by-user")) setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await signInWithEmail(email, password);
+      router.replace("/d/dashboard");
+    } catch (err: any) {
+      if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+        setError("Invalid email or password.");
+      } else {
+        setError("Failed to sign in. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -105,21 +125,45 @@ export default function LoginPage() {
         <div className="flex-1 h-px bg-border/50" />
       </div>
 
-      {/* Form Experience Placeholder */}
+      {/* Email / Password sign-in form */}
       <div className="space-y-4">
-        <div className="relative group opacity-50 cursor-not-allowed">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-muted">
-            <span className="text-sm">@</span>
-          </div>
-          <input 
-            disabled
+        <form onSubmit={handleEmailLogin} className="space-y-4">
+          <input
+            type="email"
             placeholder="Email address"
-            className="w-full pl-10 pr-4 py-4 rounded-2xl border-2 border-border bg-surface-muted text-sm font-medium"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={loading}
+            className="w-full px-4 py-3 rounded-2xl border-2 border-border bg-white text-sm font-medium focus:border-lavender focus:outline-none transition-colors"
           />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-white px-2 py-0.5 rounded-md border border-border text-[0.6rem] font-bold text-text-muted uppercase tracking-tighter shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-            Soon
-          </div>
-        </div>
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={loading}
+            className="w-full px-4 py-3 rounded-2xl border-2 border-border bg-white text-sm font-medium focus:border-lavender focus:outline-none transition-colors"
+          />
+
+          <button
+            type="submit"
+            disabled={loading || !email || !password}
+            className={cn(
+              "w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl",
+              "bg-dark text-text-on-dark font-bold text-base border-2 border-transparent",
+              "transition-all duration-200 hover:bg-dark-elevated hover:-translate-y-0.5",
+              "focus-visible:outline-none focus-visible:ring-2 ring-lavender",
+              "disabled:opacity-60 disabled:pointer-events-none shadow-xl shadow-dark/10 mt-2"
+            )}
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : null}
+            {loading ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
 
         <p className="text-center text-[0.8rem] text-text-muted mt-6">
           Don&apos;t have an account?{" "}

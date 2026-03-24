@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { signInWithGoogle } from "@/lib/auth";
+import { signInWithGoogle, signUpWithEmail } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Smartphone, Target, AreaChart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,6 +29,9 @@ export default function SignupPage() {
   const router  = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
+  const [name, setName]       = useState("");
+  const [email, setEmail]     = useState("");
+  const [password, setPassword] = useState("");
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
@@ -46,6 +49,26 @@ export default function SignupPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign-up failed. Try again.";
       if (!msg.includes("popup-closed-by-user")) setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await signUpWithEmail(email, password, name);
+      router.replace("/d/dashboard");
+    } catch (err: any) {
+      if (err.code === "auth/email-already-in-use") {
+        setError("This email is already registered. Please sign in instead.");
+      } else if (err.code === "auth/weak-password") {
+        setError("Password should be at least 6 characters.");
+      } else {
+        setError("Failed to create account. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -88,25 +111,79 @@ export default function SignupPage() {
         ))}
       </div>
 
+      {/* Email / Password sign-up form */}
+      <form onSubmit={handleEmailSignup} className="space-y-4">
+        <input
+          type="text"
+          placeholder="Your name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          disabled={loading}
+          className="w-full px-4 py-3 rounded-2xl border-2 border-border bg-white text-sm font-medium focus:border-lavender focus:outline-none transition-colors"
+        />
+        <input
+          type="email"
+          placeholder="Email address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          disabled={loading}
+          className="w-full px-4 py-3 rounded-2xl border-2 border-border bg-white text-sm font-medium focus:border-lavender focus:outline-none transition-colors"
+        />
+        <input
+          type="password"
+          placeholder="Password (min 6 characters)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={6}
+          disabled={loading}
+          className="w-full px-4 py-3 rounded-2xl border-2 border-border bg-white text-sm font-medium focus:border-lavender focus:outline-none transition-colors"
+        />
+
+        <button
+          type="submit"
+          disabled={loading || !name || !email || password.length < 6}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl",
+            "bg-dark text-text-on-dark font-bold text-base border-2 border-transparent",
+            "transition-all duration-200 hover:bg-dark-elevated hover:-translate-y-0.5",
+            "focus-visible:outline-none focus-visible:ring-2 ring-lavender",
+            "disabled:opacity-60 disabled:pointer-events-none shadow-xl shadow-dark/10 mt-2"
+          )}
+        >
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : null}
+          {loading ? "Creating account..." : "Sign up"}
+        </button>
+      </form>
+
+      {/* Divider */}
+      <div className="flex items-center gap-4 my-6">
+        <div className="flex-1 h-px bg-border/50" />
+        <span className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-text-muted">or</span>
+        <div className="flex-1 h-px bg-border/50" />
+      </div>
+
       {/* Google sign-up */}
       <div className="space-y-4">
         <button
           onClick={handleGoogle}
           disabled={loading}
+          type="button"
           className={cn(
             "w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl",
-            "bg-dark text-text-on-dark font-bold text-base border-2 border-transparent",
-            "transition-all duration-200 hover:bg-dark-elevated hover:-translate-y-0.5",
-            "focus-visible:outline-none focus-visible:ring-2 ring-lavender",
-            "disabled:opacity-60 disabled:pointer-events-none shadow-xl shadow-dark/10"
+            "bg-white border-2 border-border text-text-primary font-bold text-base",
+            "transition-all duration-200 hover:bg-lavender-light hover:border-lavender hover:-translate-y-0.5",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender",
+            "disabled:opacity-60 disabled:pointer-events-none",
+            "shadow-sm"
           )}
         >
-          {loading ? (
-            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <GoogleIcon />
-          )}
-          {loading ? "Creating account..." : "Sign up with Google"}
+          <GoogleIcon />
+          Continue with Google
         </button>
 
         {error && (

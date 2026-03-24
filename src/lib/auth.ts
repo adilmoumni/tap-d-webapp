@@ -8,11 +8,15 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
   type User,
   type Unsubscribe,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { createBioPage } from "@/lib/db/bio";
 import type { UserProfile } from "@/types";
 
 /* ---- Google Sign-In ---- */
@@ -25,6 +29,34 @@ export async function signInWithGoogle(): Promise<User> {
     return result.user;
   } catch (error: any) {
     console.error("[tap-d] Google Sign-In Error:", error.code, error.message);
+    throw error;
+  }
+}
+
+/* ---- Email/Password Sign-In ---- */
+export async function signInWithEmail(email: string, password: string): Promise<User> {
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    await createUserProfile(result.user);
+    return result.user;
+  } catch (error: any) {
+    console.error("[tap-d] Email Sign-In Error:", error.code, error.message);
+    throw error;
+  }
+}
+
+/* ---- Email/Password Sign-Up ---- */
+export async function signUpWithEmail(email: string, password: string, displayName: string): Promise<User> {
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    // Set the user's name on the Firebase Auth object
+    await updateProfile(result.user, { displayName });
+    
+    // Create the Firestore profile
+    await createUserProfile(result.user);
+    return result.user;
+  } catch (error: any) {
+    console.error("[tap-d] Email Sign-Up Error:", error.code, error.message);
     throw error;
   }
 }
@@ -45,14 +77,26 @@ export async function createUserProfile(user: User): Promise<void> {
   const snapshot = await getDoc(ref);
 
   if (!snapshot.exists()) {
+    // Generate a random 13-character alphanumeric slug (e.g. AAZZBBFF22334)
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let randomSlug = "";
+    for (let i = 0; i < 13; i++) {
+        randomSlug += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    // Create the default bio page for them immediately
+    const newBioId = await createBioPage(user.uid, randomSlug, {
+        displayName: user.displayName || "My Bio",
+    });
+
     // First sign-in: create the profile
     const profile = {
       uid:         user.uid,
       email:       user.email,
       displayName: user.displayName,
       photoURL:    user.photoURL,
-      username:    null,
-      activeBioId: null,
+      username:    randomSlug,
+      activeBioId: newBioId,
       plan:        "free",
       createdAt:   serverTimestamp() as UserProfile["createdAt"],
     };
