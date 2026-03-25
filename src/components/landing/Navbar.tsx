@@ -50,24 +50,24 @@ export function Navbar() {
 
   return (
     <motion.nav
-      className="fixed top-5 inset-x-0 z-50 mx-auto w-max"
+      className="fixed top-4 md:top-5 left-4 right-4 md:inset-x-0 z-50 mx-auto max-w-[calc(100vw-2rem)] md:w-max"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: [0, 0, 0.2, 1] }}
     >
       {/* Pill wrapper */}
-      <div className="grid grid-cols-[auto_1fr_auto] items-center px-2 py-1.5 rounded-full bg-dark/85 backdrop-blur-2xl border border-white/[0.06] min-w-[320px] md:min-w-[650px] shadow-lg shadow-black/20">
+      <div className="flex items-center justify-between px-3 md:px-2 py-2 md:py-1.5 rounded-full bg-dark/85 backdrop-blur-2xl border border-white/[0.06] shadow-lg shadow-black/20 md:min-w-[650px]">
         
         {/* Left: Logo */}
-        <div className="flex items-center">
-          <Link href="/" className="flex items-center px-4 py-2 hover:opacity-80 transition-opacity">
+        <div className="flex items-center shrink-0">
+          <Link href="/" className="flex items-center px-2 md:px-4 py-2 hover:opacity-80 transition-opacity">
             <Logo size="sm" theme="dark" />
           </Link>
           <div className="w-px h-5 bg-white/10 mx-1 hidden md:block" />
         </div>
 
         {/* Center: Nav links */}
-        <div className="hidden md:flex justify-center items-center gap-0.5">
+        <div className="hidden md:flex justify-center items-center gap-0.5 w-full">
           {navLinks.map((link) => (
             <a
               key={link.href}
@@ -86,7 +86,7 @@ export function Navbar() {
         </div>
 
         {/* Right: CTA / Mobile toggle */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <div className="hidden md:block w-px h-5 bg-white/10 mx-1" />
           <Button
             variant="secondary"
@@ -103,11 +103,11 @@ export function Navbar() {
             aria-label="Toggle menu"
             className="md:hidden p-2.5 text-text-on-dark/70 hover:text-text-on-dark transition-colors"
           >
-            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
               {mobileOpen ? (
-                <path d="M5 5l10 10M15 5L5 15" strokeLinecap="round" />
+                <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
               ) : (
-                <path d="M4 6h14M4 11h14M4 16h14" strokeLinecap="round" />
+                <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" strokeLinejoin="round" />
               )}
             </svg>
           </button>
@@ -122,22 +122,29 @@ export function Navbar() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 rounded-2xl bg-dark/95 backdrop-blur-2xl border border-white/[0.08] py-2 px-2"
+            className="absolute top-full left-0 right-0 mt-3 w-full rounded-2xl bg-dark/95 backdrop-blur-3xl border border-white/[0.08] p-3 shadow-2xl"
           >
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={(e) => handleNavClick(e, link.href)}
-                className="block px-4 py-2.5 text-sm font-medium text-text-on-dark/70 hover:text-text-on-dark hover:bg-white/[0.06] rounded-xl transition-colors"
-              >
-                {link.label}
-              </a>
-            ))}
-            <div className="px-2 pt-2 pb-1">
-              <Button variant="accent" size="sm" full asChild>
-                <Link href={user ? "/d/dashboard" : "/signup"}>{user ? "Dashboard" : "Get Started Free"}</Link>
-              </Button>
+            <div className="flex flex-col gap-1">
+              {navLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => handleNavClick(e, link.href)}
+                  className={cn(
+                    "block px-4 py-3 text-base font-medium rounded-xl transition-colors",
+                    activeSection === link.href
+                      ? "text-text-on-dark bg-white/[0.12]"
+                      : "text-text-on-dark/70 hover:text-text-on-dark hover:bg-white/[0.06]"
+                  )}
+                >
+                  {link.label}
+                </a>
+              ))}
+              <div className="mt-2 pt-2 border-t border-white/[0.08]">
+                <Button variant="accent" className="w-full justify-center h-12 text-base" asChild>
+                  <Link href={user ? "/d/dashboard" : "/signup"}>{user ? "Dashboard" : "Get Started Free"}</Link>
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}

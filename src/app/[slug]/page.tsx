@@ -24,14 +24,8 @@ function normalizeImage(url?: string | null): string {
   return DEFAULT_IMAGE;
 }
 
-function isLikelyUnsupportedSocialImage(url: string): boolean {
-  // Some social apps still fail to render WEBP OG images reliably.
-  return url.toLowerCase().includes(".webp");
-}
-
 function getPrimarySocialImage(url?: string | null): string {
   const normalized = normalizeImage(url);
-  if (isLikelyUnsupportedSocialImage(normalized)) return DEFAULT_IMAGE;
   return normalized;
 }
 
@@ -98,6 +92,8 @@ export async function generateMetadata({
     const description =
       bio.bio?.trim() ||
       `Discover ${bio.displayName}'s bio page and links on tap-d.link.`;
+    
+    // Use the actual avatar URL since we build statically
     const image = getPrimarySocialImage(bio.avatarUrl);
     const canonical = `${BASE_URL}/${decoded}`;
 
@@ -126,6 +122,8 @@ export async function generateMetadata({
   if (link) {
     const title = link.title;
     const description = "Open this smart link on tap-d.link.";
+    
+    // Use the actual thumbnail since we build statically
     const image = getPrimarySocialImage(link.thumbnailUrl);
     const canonical = `${BASE_URL}/${decoded}`;
 
