@@ -1,6 +1,7 @@
 /* ------------------------------------------------------------------
-   Firebase Storage helpers — image upload, resize, delete.
-   Client-side only (uses Canvas API for resize).
+   Firebase Storage helpers — upload, optimized image resolution, delete.
+   Works with the Firebase Resize Images extension for server-side
+   image optimization (resize + webp conversion).
 ------------------------------------------------------------------ */
 
 import {
@@ -11,60 +12,22 @@ import {
 } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 
+/* ================================================================
+   Constants
+   ================================================================ */
+
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
-/* ================================================================
-   Client-side image resize
-   ================================================================ */
+/** Max dimension for client-side pre-compression before uploading. */
+const PRE_COMPRESS_MAX = 1600;
+const PRE_COMPRESS_QUALITY = 0.82;
 
-export async function resizeImage(
-  file: File,
-  maxWidth: number,
-  maxHeight: number,
-  quality = 0.8
-): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      let { width, height } = img;
+/** How many times to poll for the resized image before falling back. */
+const RESIZE_MAX_RETRIES = 8;
 
-      // Scale down to fit within max bounds
-      if (width > maxWidth || height > maxHeight) {
-        const ratio = Math.min(maxWidth / width, maxHeight / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        reject(new Error("Could not get canvas context"));
-        return;
-      }
-
-      ctx.drawImage(img, 0, 0, width, height);
-
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            reject(new Error("Canvas toBlob returned null"));
-            return;
-          }
-          resolve(blob);
-        },
-        "image/webp",
-        quality
-      );
-    };
-
-    img.onerror = () => reject(new Error("Failed to load image"));
-    img.src = URL.createObjectURL(file);
-  });
-}
+/** Delay between retries in ms (fixed 1.5s intervals — fast enough to catch extension output). */
+const RESIZE_POLL_DELAY_MS = 1_500;
 
 /* ================================================================
    Validation
@@ -80,56 +43,282 @@ function validateImageFile(file: File): void {
 }
 
 /* ================================================================
-   Upload functions
+   Client-side pre-compression
+   ================================================================
+   Shrinks large camera photos before uploading so the upload is
+   fast and the extension has less work to do. This does NOT replace
+   the server-side resize — it just caps the upload size.
    ================================================================ */
 
-export async function uploadAvatar(uid: string, file: File): Promise<string> {
-  validateImageFile(file);
+function preCompressImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
 
-  const blob = await resizeImage(file, 400, 400, 0.8);
+      if (width <= PRE_COMPRESS_MAX && height <= PRE_COMPRESS_MAX) {
+        // Already small enough — skip compression
+        resolve(file);
+        return;
+      }
 
-  const storageRef = ref(storage, `avatars/${uid}/avatar.webp`);
-  await uploadBytes(storageRef, blob, {
-    contentType: "image/webp",
-    customMetadata: { cacheControl: "public, max-age=31536000" },
+      const ratio = Math.min(PRE_COMPRESS_MAX / width, PRE_COMPRESS_MAX / height);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Could not get canvas context")); return; }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob returned null")),
+        "image/webp",
+        PRE_COMPRESS_QUALITY,
+      );
+    };
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = URL.createObjectURL(file);
   });
-
-  return getDownloadURL(storageRef);
-}
-
-export async function uploadWallpaper(uid: string, file: File): Promise<string> {
-  validateImageFile(file);
-
-  const blob = await resizeImage(file, 1200, 1200, 0.8);
-
-  const storageRef = ref(storage, `wallpapers/${uid}/wallpaper.webp`);
-  await uploadBytes(storageRef, blob, {
-    contentType: "image/webp",
-    customMetadata: { cacheControl: "public, max-age=31536000" },
-  });
-
-  return getDownloadURL(storageRef);
-}
-
-export async function uploadThumbnail(uid: string, linkId: string, file: File): Promise<string> {
-  validateImageFile(file);
-
-  const blob = await resizeImage(file, 200, 200, 0.75);
-
-  const storageRef = ref(storage, `thumbnails/${uid}/${linkId}.webp`);
-  await uploadBytes(storageRef, blob, {
-    contentType: "image/webp",
-    customMetadata: { cacheControl: "public, max-age=31536000" },
-  });
-
-  return getDownloadURL(storageRef);
 }
 
 /* ================================================================
-   Delete
+   Resized-path resolution
+   ================================================================
+
+   Firebase Resize Images extension config:
+     Output folder : "thumbnails"
+     Convert to    : webp
+     Sizes         : 400x400, 1200x1200, 200x200
+
+   Path mapping (one file per configured size):
+     Original : biopages/123/avatar.jpg
+     Resized  : thumbnails/biopages/123/avatar_400x400.webp
+              : thumbnails/biopages/123/avatar_1200x1200.webp
+              : thumbnails/biopages/123/avatar_200x200.webp
+
+   The extension writes to {outputFolder}/{originalDir}/{stem}_{WxH}.webp
    ================================================================ */
 
+/** Must match the "Cloud Storage path for resized images" in the extension config. */
+const RESIZE_OUTPUT_PREFIX = "thumbnails";
+
+function getResizedPath(
+  originalPath: string,
+  width: number,
+  height: number,
+): string {
+  // "biopages/123/avatar.jpg" → dir="biopages/123", file="avatar.jpg"
+  const lastSlash = originalPath.lastIndexOf("/");
+  const dir = originalPath.substring(0, lastSlash);
+  const filename = originalPath.substring(lastSlash + 1);
+
+  // "avatar.jpg" → stem="avatar"
+  const dotIdx = filename.lastIndexOf(".");
+  const stem = dotIdx !== -1 ? filename.substring(0, dotIdx) : filename;
+
+  return `${RESIZE_OUTPUT_PREFIX}/${dir}/${stem}_${width}x${height}.webp`;
+}
+
+/* ================================================================
+   Core helper — upload & resolve optimized image
+   ================================================================ */
+
+/**
+ * Uploads a file to a fixed Storage path, then tries to resolve the
+ * server-side resized webp generated by the Firebase Resize Images
+ * extension. Falls back to the original URL if the resized version
+ * isn't available after retries.
+ *
+ * @returns Download URL — resized if available, original otherwise.
+ */
+export async function uploadAndGetOptimizedImage({
+  file,
+  path,
+  width = 400,
+  height = 400,
+}: {
+  file: File;
+  /** Storage path, e.g. "biopages/123/avatar.jpg" */
+  path: string;
+  /** Resize target width (must match extension config). Default 400. */
+  width?: number;
+  /** Resize target height (must match extension config). Default 400. */
+  height?: number;
+}): Promise<string> {
+  validateImageFile(file);
+
+  // 1. Pre-compress client-side (shrinks 5MB camera photos → ~200KB webp)
+  const compressed = await preCompressImage(file);
+
+  // 2. Upload to Storage (overwrite if exists)
+  const originalRef = ref(storage, path);
+  await uploadBytes(originalRef, compressed, {
+    contentType: "image/webp",
+    cacheControl: "public, max-age=31536000",
+  });
+
+  // 3. Compute the path the Resize Images extension will write to
+  const resizedPath = getResizedPath(path, width, height);
+  const resizedRef = ref(storage, resizedPath);
+
+  // 4. Poll for the resized image (fixed 1.5s intervals)
+  for (let attempt = 1; attempt <= RESIZE_MAX_RETRIES; attempt++) {
+    await sleep(RESIZE_POLL_DELAY_MS);
+
+    try {
+      const url = await getDownloadURL(resizedRef);
+      // Resized image is ready — return it
+      return url;
+    } catch {
+      // Not ready yet — keep retrying
+      if (attempt === RESIZE_MAX_RETRIES) break;
+    }
+  }
+
+  // 5. Fallback: return original download URL
+  return getDownloadURL(originalRef);
+}
+
+/* ================================================================
+   Convenience wrappers
+   ================================================================ */
+
+/**
+ * Upload a bio-page avatar image.
+ * Original: biopages/{bioId}/avatar.jpg
+ * Resized:  thumbnails/biopages/{bioId}/avatar_400x400.webp
+ */
+export async function uploadAvatar(bioId: string, file: File): Promise<string> {
+  const ext = getExtension(file.type);
+  return uploadAndGetOptimizedImage({
+    file,
+    path: `biopages/${bioId}/avatar.${ext}`,
+    width: 400,
+    height: 400,
+  });
+}
+
+/**
+ * Upload a user profile image.
+ * Original: users/{userId}/profile.jpg
+ * Resized:  thumbnails/users/{userId}/profile_400x400.webp
+ */
+export async function uploadProfileImage(userId: string, file: File): Promise<string> {
+  const ext = getExtension(file.type);
+  return uploadAndGetOptimizedImage({
+    file,
+    path: `users/${userId}/profile.${ext}`,
+    width: 400,
+    height: 400,
+  });
+}
+
+/**
+ * Upload a bio-page wallpaper image.
+ * Original: biopages/{bioId}/wallpaper.jpg
+ * Resized:  thumbnails/biopages/{bioId}/wallpaper_1200x1200.webp
+ */
+export async function uploadWallpaper(bioId: string, file: File): Promise<string> {
+  const ext = getExtension(file.type);
+  return uploadAndGetOptimizedImage({
+    file,
+    path: `biopages/${bioId}/wallpaper.${ext}`,
+    width: 1200,
+    height: 1200,
+  });
+}
+
+/**
+ * Upload a link thumbnail.
+ * Original: biopages/{bioId}/link-thumbs/{linkId}.jpg
+ * Resized:  thumbnails/biopages/{bioId}/link-thumbs/{linkId}_200x200.webp
+ */
+export async function uploadThumbnail(bioId: string, linkId: string, file: File): Promise<string> {
+  const ext = getExtension(file.type);
+  return uploadAndGetOptimizedImage({
+    file,
+    path: `biopages/${bioId}/link-thumbs/${linkId}.${ext}`,
+    width: 200,
+    height: 200,
+  });
+}
+
+/* ================================================================
+   Delete helpers
+   ================================================================ */
+
+/** Delete a single file from Storage. */
 export async function deleteImage(path: string): Promise<void> {
-  const storageRef = ref(storage, path);
-  await deleteObject(storageRef);
+  try {
+    await deleteObject(ref(storage, path));
+  } catch {
+    // Ignore "object-not-found" — already deleted or never existed
+  }
+}
+
+/**
+ * Delete both the original and resized versions of an image.
+ * Call this when removing an avatar / profile / wallpaper.
+ */
+export async function deleteImageWithResized(
+  path: string,
+  width: number,
+  height: number,
+): Promise<void> {
+  const resizedPath = getResizedPath(path, width, height);
+  await Promise.all([deleteImage(path), deleteImage(resizedPath)]);
+}
+
+/** Delete avatar + all resized variants in thumbnails/. */
+export async function deleteAvatar(bioId: string): Promise<void> {
+  const base = `biopages/${bioId}/avatar`;
+  const thumbBase = `${RESIZE_OUTPUT_PREFIX}/${base}`;
+  await Promise.all([
+    // Originals (unknown extension — try all)
+    deleteImage(`${base}.jpg`),
+    deleteImage(`${base}.png`),
+    deleteImage(`${base}.webp`),
+    // All 3 resized variants
+    deleteImage(`${thumbBase}_400x400.webp`),
+    deleteImage(`${thumbBase}_1200x1200.webp`),
+    deleteImage(`${thumbBase}_200x200.webp`),
+  ]);
+}
+
+/** Delete profile image + all resized variants in thumbnails/. */
+export async function deleteProfileImage(userId: string): Promise<void> {
+  const base = `users/${userId}/profile`;
+  const thumbBase = `${RESIZE_OUTPUT_PREFIX}/${base}`;
+  await Promise.all([
+    deleteImage(`${base}.jpg`),
+    deleteImage(`${base}.png`),
+    deleteImage(`${base}.webp`),
+    deleteImage(`${thumbBase}_400x400.webp`),
+    deleteImage(`${thumbBase}_1200x1200.webp`),
+    deleteImage(`${thumbBase}_200x200.webp`),
+  ]);
+}
+
+/* ================================================================
+   Utilities
+   ================================================================ */
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Map MIME type to file extension. */
+function getExtension(mimeType: string): string {
+  switch (mimeType) {
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    default:
+      return "jpg";
+  }
 }

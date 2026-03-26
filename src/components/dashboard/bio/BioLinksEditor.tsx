@@ -369,16 +369,17 @@ function ThumbnailPanel({
   link: BioLink;
   onUpdate: (id: string, data: Partial<BioLink>) => void;
 }) {
-  const { user } = useAuth();
+  const { profile } = useAuth();
+  const bioId = profile?.activeBioId ?? null;
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [urlDraft, setUrlDraft] = useState("");
 
   const handleUpload = async (file: File) => {
-    if (!user) return;
+    if (!bioId) return;
     setUploading(true);
     try {
-      const url = await uploadThumbnail(user.uid, link.id, file);
+      const url = await uploadThumbnail(bioId, link.id, file);
       onUpdate(link.id, { thumbnailUrl: url });
     } catch (err) {
       console.error("Thumbnail upload failed:", err);

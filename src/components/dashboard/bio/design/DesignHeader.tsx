@@ -8,7 +8,8 @@ import { useAuth } from "@/hooks/useAuth";
 
 export function DesignHeader() {
   const { data, updateField, updateTheme } = useBioEditor();
-  const { user } = useAuth();
+  const { profile } = useAuth();
+  const bioId = profile?.activeBioId ?? null;
   const layout = data.theme.headerLayout;
 
   return (
@@ -23,7 +24,7 @@ export function DesignHeader() {
           displayName={data.displayName}
           onUpload={(url) => updateField("avatarUrl", url)}
           onRemove={() => updateField("avatarUrl", null)}
-          uploadFn={(file) => uploadAvatar(user?.uid ?? "anon", file)}
+          uploadFn={(file) => uploadAvatar(bioId ?? "anon", file)}
         />
       </div>
 
