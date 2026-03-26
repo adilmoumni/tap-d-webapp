@@ -33,6 +33,7 @@ import { findPlatform } from "@/lib/platforms";
 import Image from "next/image";
 import type { BioLink } from "@/types/bio";
 import { QRPreview } from "@/components/dashboard/qr/QRPreview";
+import { countryDisplayName, countryFlagEmoji } from "@/lib/country";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://tap-d.link";
 
@@ -933,6 +934,11 @@ function StatsPanel({ link }: { link: BioLink }) {
     .slice(0, 5)
     .map(([name, clicks]) => ({ name, clicks }));
 
+  const referrers = Object.entries(link.referrers || {})
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, clicks]) => ({ name, clicks }));
+
   return (
     <div className="px-4 pb-4 pt-1">
       <div className="bg-[#faf8fc] rounded-[12px] p-4 space-y-4">
@@ -984,14 +990,58 @@ function StatsPanel({ link }: { link: BioLink }) {
         {/* Top Countries */}
         {countries.length > 0 && (
           <div className="bg-white rounded-[10px] p-3 border border-[#e8e6e2]">
-            <p className="text-[10px] text-[#8a8a9a] mb-2 font-medium">Top Locations</p>
-            <div className="space-y-1.5">
-              {countries.map((c) => (
-                <div key={c.name} className="flex items-center justify-between text-[11px]">
-                  <span className="text-[#1a1a2e]">{c.name}</span>
-                  <span className="font-semibold text-[#1a1a2e]">{c.clicks.toLocaleString()}</span>
-                </div>
-              ))}
+            <p className="text-[10px] text-[#8a8a9a] mb-2.5 font-medium">Top Locations</p>
+            <div className="space-y-2">
+              {countries.map((c) => {
+                const maxClicks = countries[0]?.clicks || 1;
+                const pct = Math.round((c.clicks / maxClicks) * 100);
+                return (
+                  <div key={c.name} className="flex items-center gap-2">
+                    <span className="text-[13px] flex-shrink-0">{countryFlagEmoji(c.name)}</span>
+                    <span className="text-[11px] text-[#1a1a2e] w-24 truncate flex-shrink-0">
+                      {countryDisplayName(c.name)}
+                    </span>
+                    <div className="flex-1 h-1.5 bg-[#f0eeea] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[#e8b86d]"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-[11px] font-semibold text-[#1a1a2e] flex-shrink-0 w-5 text-right">
+                      {c.clicks}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Traffic Sources (Referrers) */}
+        {referrers.length > 0 && (
+          <div className="bg-white rounded-[10px] p-3 border border-[#e8e6e2]">
+            <p className="text-[10px] text-[#8a8a9a] mb-2.5 font-medium">Traffic Sources</p>
+            <div className="space-y-2">
+              {referrers.map((r) => {
+                const maxClicks = referrers[0]?.clicks || 1;
+                const pct = Math.round((r.clicks / maxClicks) * 100);
+                return (
+                  <div key={r.name} className="flex items-center gap-2">
+                    <span className="text-[11px] text-[#1a1a2e] w-28 truncate flex-shrink-0">
+                      {r.name === "direct" ? <span className="italic text-[#8a8a9a]">Direct</span> : r.name}
+                    </span>
+                    <div className="flex-1 h-1.5 bg-[#f0eeea] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[#7c6cef]"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-[11px] font-semibold text-[#1a1a2e] flex-shrink-0 w-5 text-right">
+                      {r.clicks}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

@@ -195,11 +195,15 @@ export async function logBioClick(
     await setDoc(statsRef, statsAggregates, { merge: true });
 
     // Update link-specific total
-    await setDoc(linkRef, {
+    const linkUpdates: Record<string, ReturnType<typeof increment>> = {
       clicks: increment(1),
       [deviceField]: increment(1),
       [`countries.${toFieldKey(country)}`]: increment(1),
-    }, { merge: true });
+    };
+    if (referrer && referrer !== "direct") {
+      linkUpdates[`referrers.${toFieldKey(referrer)}`] = increment(1);
+    }
+    await setDoc(linkRef, linkUpdates, { merge: true });
 
     // 3. Overall bio page totals
     const bioRef = doc(db, "biopages", bioId);

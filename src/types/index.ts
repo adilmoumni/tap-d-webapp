@@ -15,9 +15,11 @@ export interface UserProfile {
   username: string | null;        // chosen slug for bio page
   activeBioId?: string | null;    // pointer to primary bio doc
   plan: PlanId;
+  role?: "admin" | "user";       // optional role — "admin" unlocks blog dashboard
   createdAt: Timestamp | Date;
   updatedAt?: Timestamp | Date;
 }
+
 
 /* ---- Smart Link ---- */
 export interface SmartLink {

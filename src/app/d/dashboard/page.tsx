@@ -3,7 +3,7 @@
 import { useDashboard } from "@/contexts/DashboardContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/hooks/useAuth";
-import { countryDisplayName, normalizeCountryCode, UNKNOWN_COUNTRY } from "@/lib/country";
+import { countryDisplayName } from "@/lib/country";
 
 /* ─────────────────────────────────────────────
    Shared primitives
@@ -55,24 +55,36 @@ function BarChart({ data, days = 7 }: { data: { date: string; clicks: number }[]
   const slice = data.slice(-days);
   const max = Math.max(...slice.map((d) => d.clicks), 1);
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const mid = Math.round(max / 2);
 
   return (
-    <div className="flex items-end gap-[3px] h-[70px] mt-2">
-      {slice.map((d) => {
-        const h = Math.max((d.clicks / max) * 100, 4);
-        const dayLabel = daysOfWeek[new Date(d.date).getDay()];
-        return (
-          <div key={d.date} className="flex-1 flex flex-col items-center gap-[2px]" title={`${d.date}: ${d.clicks} clicks`}>
-            <div
-              className="w-full rounded-t-[3px] transition-all"
-              style={{ height: `${h}%`, background: "#e8b86d", minHeight: 4 }}
-            />
-            {days <= 7 && (
-              <span className="text-[8px] text-[#8a8a9a]">{dayLabel}</span>
-            )}
-          </div>
-        );
-      })}
+    <div className="flex gap-2 mt-2">
+      {/* Y-axis */}
+      <div className="flex flex-col justify-between items-end pb-4" style={{ minWidth: 24 }}>
+        <span className="text-[8px] text-[#8a8a9a] tabular-nums">{fmt(max)}</span>
+        <span className="text-[8px] text-[#8a8a9a] tabular-nums">{fmt(mid)}</span>
+        <span className="text-[8px] text-[#8a8a9a] tabular-nums">0</span>
+      </div>
+      {/* Bars */}
+      <div className="flex-1">
+        <div className="flex items-end gap-[3px] h-[70px]">
+          {slice.map((d) => {
+            const h = Math.max((d.clicks / max) * 100, 4);
+            const dayLabel = daysOfWeek[new Date(d.date).getDay()];
+            return (
+              <div key={d.date} className="flex-1 flex flex-col items-center gap-[2px]" title={`${d.date}: ${d.clicks} clicks`}>
+                <div
+                  className="w-full rounded-t-[3px] transition-all"
+                  style={{ height: `${h}%`, background: "#e8b86d", minHeight: 4 }}
+                />
+                {days <= 7 && (
+                  <span className="text-[8px] text-[#8a8a9a]">{dayLabel}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -293,11 +305,8 @@ function ReferrersPanel() {
 
 function CountriesPanel() {
   const analytics = useAnalytics();
-  const countries = [...analytics.topCountries];
-  if (!countries.some((c) => normalizeCountryCode(c.name) === UNKNOWN_COUNTRY)) {
-    countries.push({ name: UNKNOWN_COUNTRY, clicks: 0 });
-  }
-  countries.sort((a, b) => b.clicks - a.clicks);
+  // Sort by clicks descending; don't inject phantom Unknown=0 entries
+  const countries = [...analytics.topCountries].sort((a, b) => b.clicks - a.clicks);
 
   return (
     <>

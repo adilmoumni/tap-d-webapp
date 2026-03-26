@@ -86,7 +86,7 @@ export function AnalyticsChart({ stats, className }: AnalyticsChartProps) {
   const allCountries = useMemo(
     () =>
       stats.reduce<Record<string, number>>((acc, s) => {
-        for (const [k, v] of Object.entries(s.countries)) {
+        for (const [k, v] of Object.entries(s.countries ?? {})) {
           acc[k] = (acc[k] ?? 0) + v;
         }
         return acc;
@@ -97,7 +97,7 @@ export function AnalyticsChart({ stats, className }: AnalyticsChartProps) {
   const allReferrers = useMemo(
     () =>
       stats.reduce<Record<string, number>>((acc, s) => {
-        for (const [k, v] of Object.entries(s.referrers)) {
+        for (const [k, v] of Object.entries(s.referrers ?? {})) {
           acc[k] = (acc[k] ?? 0) + v;
         }
         return acc;
@@ -120,39 +120,50 @@ export function AnalyticsChart({ stats, className }: AnalyticsChartProps) {
         <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
           Clicks — last 30 days
         </p>
-        <div className="flex items-end gap-0.5 h-24">
-          {stats.map((s) => {
-            const pct = Math.round((s.clicks / maxClicks) * 100);
-            const label = s.date.slice(5); // MM-DD
-            return (
-              <div
-                key={s.date}
-                className="flex flex-col items-center flex-1 min-w-0 group"
-              >
-                <div className="relative w-full flex items-end" style={{ height: 80 }}>
+        <div className="flex gap-2">
+          {/* Y-axis */}
+          <div className="flex flex-col justify-between items-end" style={{ minWidth: 28, height: 80 }}>
+            <span className="text-[8px] text-text-muted tabular-nums">{maxClicks}</span>
+            <span className="text-[8px] text-text-muted tabular-nums">{Math.round(maxClicks / 2)}</span>
+            <span className="text-[8px] text-text-muted tabular-nums">0</span>
+          </div>
+          {/* Bars */}
+          <div className="flex-1">
+            <div className="flex items-end gap-0.5 h-24">
+              {stats.map((s) => {
+                const pct = Math.round((s.clicks / maxClicks) * 100);
+                const label = s.date.slice(5); // MM-DD
+                return (
                   <div
-                    title={`${label}: ${s.clicks}`}
-                    className="w-full rounded-t-sm bg-lavender group-hover:bg-lavender-dark transition-colors"
-                    style={{ height: `${Math.max(pct, s.clicks > 0 ? 4 : 0)}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {/* X-axis: show ~6 evenly-spaced labels */}
-        <div className="flex mt-1">
-          {stats
-            .filter((_, i) => i % 5 === 0 || i === stats.length - 1)
-            .map((s) => (
-              <span
-                key={s.date}
-                className="text-[9px] text-text-muted"
-                style={{ flex: "1 1 0" }}
-              >
-                {s.date.slice(5)}
-              </span>
-            ))}
+                    key={s.date}
+                    className="flex flex-col items-center flex-1 min-w-0 group"
+                  >
+                    <div className="relative w-full flex items-end" style={{ height: 80 }}>
+                      <div
+                        title={`${label}: ${s.clicks}`}
+                        className="w-full rounded-t-sm bg-lavender group-hover:bg-lavender-dark transition-colors"
+                        style={{ height: `${Math.max(pct, s.clicks > 0 ? 4 : 0)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* X-axis: show ~6 evenly-spaced labels */}
+            <div className="flex mt-1">
+              {stats
+                .filter((_, i) => i % 5 === 0 || i === stats.length - 1)
+                .map((s) => (
+                  <span
+                    key={s.date}
+                    className="text-[9px] text-text-muted"
+                    style={{ flex: "1 1 0" }}
+                  >
+                    {s.date.slice(5)}
+                  </span>
+                ))}
+            </div>
+          </div>
         </div>
       </div>
 

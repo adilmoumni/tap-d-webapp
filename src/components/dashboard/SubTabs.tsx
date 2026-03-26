@@ -4,7 +4,7 @@ import {
   BarChart3, Smartphone, Globe, ExternalLink,
   List, QrCode, Users,
   User, LayoutTemplate, ImageIcon, Type, Square, Palette, AlignJustify,
-  CreditCard, KeyRound,
+  CreditCard, KeyRound, PenLine,
 } from "lucide-react";
 import { useDashboard, type DashboardSection } from "@/contexts/DashboardContext";
 import { cn } from "@/lib/utils";
@@ -44,10 +44,15 @@ const settingsTabs: TabItem[] = [
   // { id: "api-keys", label: "API keys",     icon: KeyRound },
 ];
 
+const blogTabs: TabItem[] = [
+  { id: "posts", label: "Posts", icon: PenLine },
+];
+
 const sectionTitles: Record<DashboardSection, string> = {
   analytics: "Analytics",
   links: "Links",
   bio: "Bio page",
+  blog: "Blog",
   settings: "Settings",
 };
 
@@ -77,6 +82,7 @@ export function SubTabs() {
   if (activeSection === "analytics") tabs = analyticsTabs;
   else if (activeSection === "links") tabs = linksTabs;
   else if (activeSection === "bio") tabs = bioMode === "content" ? bioContentTabs : bioDesignTabs;
+  else if (activeSection === "blog") tabs = blogTabs;
   else tabs = settingsTabs;
 
   const handleBioMode = (mode: "content" | "design") => {

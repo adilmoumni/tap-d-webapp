@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Link2, User, Settings } from "lucide-react";
+import { BarChart3, Link2, User, Settings, PenLine } from "lucide-react";
 import { useDashboard, type DashboardSection } from "@/contexts/DashboardContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { cn } from "@/lib/utils";
 
 const navItems: { section: DashboardSection; label: string; icon: React.ElementType; href: string }[] = [
@@ -15,9 +16,12 @@ const navItems: { section: DashboardSection; label: string; icon: React.ElementT
   { section: "settings", label: "Settings", icon: Settings, href: "/d/settings" },
 ];
 
+const blogNavItem = { section: "blog" as DashboardSection, label: "Blog", icon: PenLine, href: "/d/blog" };
+
 function sectionFromPath(pathname: string): DashboardSection {
   if (pathname.startsWith("/d/bio")) return "bio";
   if (pathname.startsWith("/d/links")) return "links";
+  if (pathname.startsWith("/d/blog")) return "blog";
   if (pathname.startsWith("/d/settings")) return "settings";
   return "analytics";
 }
@@ -26,6 +30,7 @@ export function IconSidebar() {
   const pathname = usePathname();
   const { activeSection, setActiveSection } = useDashboard();
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
 
   // Sync context with current URL on initial load and navigation
   useEffect(() => {
@@ -63,6 +68,29 @@ export function IconSidebar() {
             </Link>
           );
         })}
+
+        {/* Blog — admin only */}
+        {isAdmin && (() => {
+          const { section, label, icon: Icon, href } = blogNavItem;
+          const active = activeSection === section;
+          return (
+            <Link
+              key={section}
+              href={href}
+              className={cn(
+                "relative w-11 h-11 rounded-[12px] flex flex-col items-center justify-center gap-0.5 transition-all duration-150",
+                "text-[#8a8a9a] hover:bg-[#f0eeea] hover:text-[#1a1a2e]",
+                active && "bg-[#f0eeea] text-[#1a1a2e]"
+              )}
+            >
+              {active && (
+                <span className="absolute left-[-2px] w-1 h-5 rounded-r-sm bg-[#0a0a0f]" />
+              )}
+              <Icon size={18} />
+              <span className="text-[8px] font-medium leading-none">{label}</span>
+            </Link>
+          );
+        })()}
       </nav>
 
       {/* User avatar */}

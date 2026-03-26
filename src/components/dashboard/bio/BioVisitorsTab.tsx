@@ -144,27 +144,52 @@ export function BioVisitorsTab() {
     ), [stats]
   );
 
-  const allCountries = useMemo(() =>
-    mergeCountryCounts(...stats.map((s) => s.countries)),
-    [stats]
-  );
-
-  const countriesForDisplay = useMemo(
-    () => ({ ...allCountries, [UNKNOWN_COUNTRY]: allCountries[UNKNOWN_COUNTRY] ?? 0 }),
-    [allCountries]
-  );
+  // Merge country counts from daily stats aggregates + raw visitor docs
+  // (raw visitors are the source of truth for older data that may lack the aggregate)
+  const allCountries = useMemo(() => {
+    // From daily stats
+    const fromStats = mergeCountryCounts(...stats.map((s) => s.countries));
+    // From raw visitors (tally per-visit country)
+    const fromVisitors: Record<string, number> = {};
+    for (const v of visitors) {
+      const code = normalizeCountryCode(v.country);
+      fromVisitors[code] = (fromVisitors[code] ?? 0) + 1;
+    }
+    // Prefer the larger of the two counts per country key
+    const merged: Record<string, number> = { ...fromVisitors };
+    for (const [k, v] of Object.entries(fromStats)) {
+      merged[k] = Math.max(merged[k] ?? 0, v);
+    }
+    return merged;
+  }, [stats, visitors]);
 
   const countryCount = useMemo(
     () => Object.keys(allCountries).filter((k) => normalizeCountryCode(k) !== UNKNOWN_COUNTRY).length,
     [allCountries]
   );
 
-  const allReferrers = useMemo(() =>
-    stats.reduce<Record<string, number>>((acc, s) => {
-      for (const [k, v] of Object.entries(s.referrers)) acc[k] = (acc[k] ?? 0) + v;
+  const allReferrers = useMemo(() => {
+    // From daily stats
+    const fromStats = stats.reduce<Record<string, number>>((acc, s) => {
+      for (const [k, v] of Object.entries(s.referrers ?? {})) acc[k] = (acc[k] ?? 0) + v;
       return acc;
-    }, {}), [stats]
-  );
+    }, {});
+    
+    // From raw visitors (tally per-visit referrer)
+    const fromVisitors: Record<string, number> = {};
+    for (const v of visitors) {
+      if (v.referrer) {
+        fromVisitors[v.referrer] = (fromVisitors[v.referrer] ?? 0) + 1;
+      }
+    }
+
+    // Prefer the larger of the two counts per referrer key
+    const merged: Record<string, number> = { ...fromVisitors };
+    for (const [k, v] of Object.entries(fromStats)) {
+      merged[k] = Math.max(merged[k] ?? 0, v);
+    }
+    return merged;
+  }, [stats, visitors]);
 
   const topCountryCode = useMemo(
     () =>
@@ -238,38 +263,49 @@ export function BioVisitorsTab() {
           </div>
         ) : (
           <>
-            <div className="flex items-end gap-0.5 h-24">
-              {stats.map((s) => {
-                const pct = Math.round((s.totalViews / maxViews) * 100);
-                return (
-                  <div
-                    key={s.date}
-                    className="flex flex-col items-center flex-1 min-w-0 group"
-                  >
-                    <div className="relative w-full flex items-end" style={{ height: 80 }}>
+            <div className="flex gap-2">
+              {/* Y-axis */}
+              <div className="flex flex-col justify-between items-end" style={{ minWidth: 28, height: 80 }}>
+                <span className="text-[8px] text-[#8a8a9a] tabular-nums">{maxViews}</span>
+                <span className="text-[8px] text-[#8a8a9a] tabular-nums">{Math.round(maxViews / 2)}</span>
+                <span className="text-[8px] text-[#8a8a9a] tabular-nums">0</span>
+              </div>
+              {/* Bars */}
+              <div className="flex-1">
+                <div className="flex items-end gap-0.5 h-24">
+                  {stats.map((s) => {
+                    const pct = Math.round((s.totalViews / maxViews) * 100);
+                    return (
                       <div
-                        title={`${s.date.slice(5)}: ${s.totalViews}`}
-                        className="w-full rounded-t-sm bg-[#e8b86d] group-hover:bg-[#d4a85c] transition-colors"
-                        style={{ height: `${Math.max(pct, s.totalViews > 0 ? 4 : 0)}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {/* x-axis labels */}
-            <div className="flex mt-1">
-              {stats
-                .filter((_, i) => i % 5 === 0 || i === stats.length - 1)
-                .map((s) => (
-                  <span
-                    key={s.date}
-                    className="text-[9px] text-[#8a8a9a]"
-                    style={{ flex: "1 1 0" }}
-                  >
-                    {s.date.slice(5)}
-                  </span>
-                ))}
+                        key={s.date}
+                        className="flex flex-col items-center flex-1 min-w-0 group"
+                      >
+                        <div className="relative w-full flex items-end" style={{ height: 80 }}>
+                          <div
+                            title={`${s.date.slice(5)}: ${s.totalViews}`}
+                            className="w-full rounded-t-sm bg-[#e8b86d] group-hover:bg-[#d4a85c] transition-colors"
+                            style={{ height: `${Math.max(pct, s.totalViews > 0 ? 4 : 0)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* x-axis labels */}
+                <div className="flex mt-1">
+                  {stats
+                    .filter((_, i) => i % 5 === 0 || i === stats.length - 1)
+                    .map((s) => (
+                      <span
+                        key={s.date}
+                        className="text-[9px] text-[#8a8a9a]"
+                        style={{ flex: "1 1 0" }}
+                      >
+                        {s.date.slice(5)}
+                      </span>
+                    ))}
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -308,7 +344,7 @@ export function BioVisitorsTab() {
       {/* ── Countries & Referrers ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <TopTable
-          data={countriesForDisplay}
+          data={allCountries}
           label="Top countries"
           emptyMsg="No country data yet."
           formatLabel={countryDisplayName}
@@ -325,27 +361,22 @@ export function BioVisitorsTab() {
           <p className="text-[12px] text-[#8a8a9a] italic">No visitors recorded yet.</p>
         ) : (
           <div className="space-y-1">
-            {visitors.map((v) => {
+            {visitors.slice(0, 10).map((v) => {
               const DevIcon = DEVICE_ICON[v.device] ?? Monitor;
               return (
                 <div
                   key={v.id}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-[12px] bg-white border border-[#f0eeea] hover:border-[#e8e6e2] transition-colors"
                 >
-                  {/* device badge */}
                   <div className={cn("w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0", DEVICE_COLOR[v.device])}>
                     <DevIcon size={14} />
                   </div>
-
-                  {/* flag + country */}
                   <span className="text-[14px] flex-shrink-0" title={countryDisplayName(v.country)}>
                     {countryFlagEmoji(v.country)}
                   </span>
                   <span className="w-20 text-[11px] text-[#8a8a9a] truncate flex-shrink-0">
                     {countryDisplayName(v.country)}
                   </span>
-
-                  {/* referrer */}
                   <span className="flex-1 text-[12px] text-[#1a1a2e] truncate">
                     {v.referrer === "direct" ? (
                       <span className="italic text-[#8a8a9a]">Direct</span>
@@ -356,14 +387,18 @@ export function BioVisitorsTab() {
                       </span>
                     )}
                   </span>
-
-                  {/* time */}
                   <span className="text-[11px] text-[#8a8a9a] flex-shrink-0 tabular-nums">
                     {timeAgo(v.createdAt)}
                   </span>
                 </div>
               );
             })}
+            {/* Total summary */}
+            <p className="text-center text-[11px] text-[#8a8a9a] pt-2 border-t border-[#f0eeea] mt-1">
+              Showing 10 most recent —{" "}
+              <span className="font-semibold text-[#1a1a2e]">{visitors.length.toLocaleString()}</span>{" "}
+              total visitors recorded
+            </p>
           </div>
         )}
       </div>

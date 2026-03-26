@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 
-export type DashboardSection = "analytics" | "links" | "bio" | "settings";
+export type DashboardSection = "analytics" | "links" | "bio" | "blog" | "settings";
 export type BioMode = "content" | "design";
 
 interface DashboardContextValue {
@@ -20,6 +20,7 @@ const DEFAULT_TABS: Record<DashboardSection, string> = {
   analytics: "overview",
   links: "all-links",
   bio: "links",
+  blog: "posts",
   settings: "account",
 };
 

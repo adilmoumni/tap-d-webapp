@@ -68,6 +68,7 @@ export interface BioLink {
   androidClicks?: number;
   desktopClicks?: number;
   countries?: Record<string, number>;
+  referrers?: Record<string, number>;
   order: number;
   layout?: "classic" | "featured";
   thumbnailUrl?: string | null;
