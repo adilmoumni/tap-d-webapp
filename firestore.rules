@@ -1,6 +1,32 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function bioOwnerUid(data) {
+      return data.get('ownerId', data.get('uid', null));
+    }
+
+    function hasPendingTransfer(data) {
+      return data.get('pendingTransfer', null) != null
+        && data.get('pendingTransfer', null).get('status', '') == 'pending';
+    }
+
+    function authEmail() {
+      return request.auth != null && request.auth.token.email != null
+        ? request.auth.token.email
+        : null;
+    }
+
+    function isPendingTransferRecipient(data) {
+      return request.auth != null
+        && hasPendingTransfer(data)
+        && (
+          data.get('pendingTransfer', null).get('toUid', null) == request.auth.uid
+          || (
+            authEmail() != null
+            && data.get('pendingTransfer', null).get('toEmail', null) == authEmail()
+          )
+        );
+    }
 
     // ── Users ──
     match /users/{uid} {
@@ -10,46 +36,129 @@ service cloud.firestore {
 
     // ── Usernames (uniqueness reservation) ──
     match /usernames/{username} {
+      function canFinalizeAcceptedTransfer() {
+        return exists(/databases/$(database)/documents/biopages/$(username))
+          && isPendingTransferRecipient(
+            get(/databases/$(database)/documents/biopages/$(username)).data
+          )
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.get('bioId', username) == username
+          && getAfter(/databases/$(database)/documents/biopages/$(username)).data.get('ownerId', getAfter(/databases/$(database)/documents/biopages/$(username)).data.get('uid', null)) == request.auth.uid
+          && getAfter(/databases/$(database)/documents/biopages/$(username)).data.get('pendingTransfer', null) == null;
+      }
+
       allow read: if true;
       allow create: if request.auth != null
         && !exists(/databases/$(database)/documents/usernames/$(username))
         && request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null
+        && (
+          resource.data.uid == request.auth.uid
+          || canFinalizeAcceptedTransfer()
+        );
       allow delete: if request.auth != null
         && resource.data.uid == request.auth.uid;
-      // No updates — delete old + create new to change username
+      // Update is only allowed for owner maintenance or transfer acceptance.
     }
 
     // ── Bio pages ──
     match /biopages/{bioId} {
-      allow read: if true;
+      function isBioOwner(data) {
+        return request.auth != null
+          && bioOwnerUid(data) == request.auth.uid;
+      }
+
+      function userHasActiveBio() {
+        return request.auth != null
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('activeBioId', null) != null;
+      }
+
+      function currentUserPlan() {
+        return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('plan', 'free')
+          : 'free';
+      }
+
+      function hasUnlimitedBioPages() {
+        return currentUserPlan() == 'pro' || currentUserPlan() == 'team';
+      }
+
+      function currentBioDoc() {
+        return get(/databases/$(database)/documents/biopages/$(bioId)).data;
+      }
+
+      function isCurrentBioOwner() {
+        return request.auth != null
+          && bioOwnerUid(currentBioDoc()) == request.auth.uid;
+      }
+
+      function canReadCurrentBio() {
+        return currentBioDoc().get('isPublic', false) == true
+          || isCurrentBioOwner()
+          || isPendingTransferRecipient(currentBioDoc());
+      }
+
+      function ownerCanUpdateBio() {
+        return isBioOwner(resource.data)
+          && request.resource.data.get('ownerId', bioOwnerUid(resource.data)) == bioOwnerUid(resource.data)
+          && request.resource.data.get('uid', bioOwnerUid(resource.data)) == bioOwnerUid(resource.data)
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['pendingTransfer'])
+            || request.resource.data.get('pendingTransfer', null) == null
+            || currentUserPlan() == 'pro'
+          );
+      }
+
+      function recipientCanAcceptTransfer() {
+        return isPendingTransferRecipient(resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerId', 'uid', 'pendingTransfer', 'updatedAt'])
+          && request.resource.data.get('ownerId', null) == request.auth.uid
+          && request.resource.data.get('uid', null) == request.auth.uid
+          && request.resource.data.get('pendingTransfer', null) == null;
+      }
+
+      function recipientCanDeclineTransfer() {
+        return isPendingTransferRecipient(resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pendingTransfer', 'updatedAt'])
+          && request.resource.data.get('ownerId', bioOwnerUid(resource.data)) == bioOwnerUid(resource.data)
+          && request.resource.data.get('uid', bioOwnerUid(resource.data)) == bioOwnerUid(resource.data)
+          && request.resource.data.get('pendingTransfer', null) == null;
+      }
+
+      allow read: if resource.data.isPublic == true
+        || isBioOwner(resource.data)
+        || isPendingTransferRecipient(resource.data);
+
       allow create: if request.auth != null
-        && request.resource.data.ownerId == request.auth.uid;
-      allow update: if (request.auth != null && resource.data.ownerId == request.auth.uid)
-        || (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-             'totalClicks', 'iosClicksTotal', 'androidClicksTotal', 'desktopClicksTotal', 'countriesTotal',
-             'totalViews', 'iosViewsTotal', 'androidViewsTotal', 'desktopViewsTotal', 'viewCountriesTotal'
-           ]));
-      allow delete: if request.auth != null
-        && resource.data.ownerId == request.auth.uid;
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.get('uid', request.auth.uid) == request.auth.uid
+        && (hasUnlimitedBioPages() || !userHasActiveBio());
+
+      allow update: if ownerCanUpdateBio()
+        || recipientCanAcceptTransfer()
+        || recipientCanDeclineTransfer();
+
+      allow delete: if isBioOwner(resource.data);
 
       // Links subcollection
       match /links/{linkId} {
-        allow read: if true;
+        allow read: if canReadCurrentBio();
         // Only allow clicks field and breakdowns increment from anyone (for the click API)
         // Full writes require ownership
         allow update: if request.auth == null
           ? (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clicks', 'iosClicks', 'androidClicks', 'desktopClicks', 'countries']))
-          : (get(/databases/$(database)/documents/biopages/$(bioId)).data.ownerId == request.auth.uid);
+          : isCurrentBioOwner();
         allow create: if request.auth != null
-          && getAfter(/databases/$(database)/documents/biopages/$(bioId)).data.ownerId == request.auth.uid;
+          && isCurrentBioOwner();
         allow delete: if request.auth != null
-          && get(/databases/$(database)/documents/biopages/$(bioId)).data.ownerId == request.auth.uid;
+          && isCurrentBioOwner();
       }
 
       // Stats subcollection (daily aggregates — written by click API)
       match /stats/{date} {
         allow read: if request.auth != null
-          && get(/databases/$(database)/documents/biopages/$(bioId)).data.ownerId == request.auth.uid;
+          && isCurrentBioOwner();
         allow write: if true;  // click tracking writes from server API route — open
       }
     }
@@ -110,4 +219,3 @@ service cloud.firestore {
     }
   }
 }
-

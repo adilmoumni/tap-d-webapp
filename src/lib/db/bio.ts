@@ -19,11 +19,55 @@ import {
   where,
   limit,
   runTransaction,
+  deleteField,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { BioPageData, BioLink, BioSocialLink, BioTheme } from "@/types/bio";
+import type { BioPageData, BioLink, BioSocialLink, BioTheme, BioPendingTransfer } from "@/types/bio";
 import { DEFAULT_THEME } from "@/types/bio";
 import { isPublicSlugAvailable, isValidPublicSlug, normalizePublicSlug } from "@/lib/slug";
+
+export type UserBiopageRecord = {
+  id: string;
+  username: string;
+  displayName?: string;
+  avatarUrl?: string | null;
+  isPublic?: boolean;
+  totalViews?: number;
+  pendingTransfer?: BioPendingTransfer | null;
+  slug?: string;
+  uid?: string;
+  ownerId?: string;
+  createdAt?: unknown;
+} & Record<string, unknown>;
+
+function asMillis(value: unknown): number {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "number") return value;
+  if (typeof value === "object" && value !== null && "toMillis" in value) {
+    const maybeTs = value as { toMillis?: () => number };
+    if (typeof maybeTs.toMillis === "function") return maybeTs.toMillis();
+  }
+  return 0;
+}
+
+function asFiniteNumber(value: unknown): number {
+  if (typeof value !== "number") return 0;
+  return Number.isFinite(value) ? value : 0;
+}
+
+function normalizeEmail(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+export function normalizeBioUsername(value: string): string {
+  return value.toLowerCase().trim().replace(/[^a-z0-9_]/g, "").slice(0, 30);
+}
+
+export function isValidBioUsername(username: string): boolean {
+  if (username.length < 3 || username.length > 30) return false;
+  return /^[a-z0-9_]+$/.test(username);
+}
 
 /* ================================================================
    READ
@@ -43,7 +87,364 @@ export async function getBioPageBySlug(slug: string): Promise<(BioPageData & { i
   return { id: d.id, ...d.data() } as BioPageData & { id: string };
 }
 
-export async function getLinkBySlug(slug: string): Promise<any | null> {
+export async function getUserBiopages(uid: string): Promise<UserBiopageRecord[]> {
+  const ownerQuery = query(
+    collection(db, "biopages"),
+    where("ownerId", "==", uid),
+    orderBy("createdAt", "desc")
+  );
+  let snap = await getDocs(ownerQuery);
+
+  // Backward compatibility: some docs may still only have uid.
+  if (snap.empty) {
+    const legacyQuery = query(collection(db, "biopages"), where("uid", "==", uid));
+    snap = await getDocs(legacyQuery);
+  }
+
+  const pages = snap.docs.map((d) => {
+    const data = d.data() as Record<string, unknown>;
+    const slug = typeof data.slug === "string" ? data.slug : "";
+    return {
+      ...data,
+      id: d.id,
+      username: slug || d.id,
+    } as UserBiopageRecord;
+  });
+
+  pages.sort((a, b) => asMillis(b.createdAt) - asMillis(a.createdAt));
+  return pages;
+}
+
+export async function isBioUsernameAvailable(username: string): Promise<boolean> {
+  const normalized = normalizeBioUsername(username);
+  if (!isValidBioUsername(normalized)) return false;
+
+  const [byIdSnap, slugAvailable] = await Promise.all([
+    getDoc(doc(db, "biopages", normalized)),
+    isPublicSlugAvailable(normalized),
+  ]);
+
+  return !byIdSnap.exists() && slugAvailable;
+}
+
+export type PendingBioTransferRecord = {
+  bioId: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  linkCount: number;
+  pendingTransfer: {
+    fromUid: string;
+    fromEmail: string;
+    toEmail: string;
+    toUid: string | null;
+    status: "pending";
+  };
+};
+
+async function findUserUidByEmail(email: string): Promise<string | null> {
+  const q = query(
+    collection(db, "users"),
+    where("email", "==", email),
+    limit(1)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  return snap.docs[0].id;
+}
+
+export async function requestBioPageTransfer(input: {
+  bioId: string;
+  ownerUid: string;
+  ownerEmail: string;
+  recipientEmail: string;
+}): Promise<void> {
+  const normalizedRecipientEmail = normalizeEmail(input.recipientEmail);
+  const normalizedOwnerEmail = normalizeEmail(input.ownerEmail);
+  if (!normalizedRecipientEmail) {
+    throw new Error("Recipient email is required.");
+  }
+  if (!normalizedOwnerEmail) {
+    throw new Error("Your account email is required.");
+  }
+
+  const bioRef = doc(db, "biopages", input.bioId);
+  const ownerRef = doc(db, "users", input.ownerUid);
+  const recipientUid = await findUserUidByEmail(normalizedRecipientEmail);
+
+  await runTransaction(db, async (tx) => {
+    const [bioSnap, ownerSnap] = await Promise.all([
+      tx.get(bioRef),
+      tx.get(ownerRef),
+    ]);
+
+    if (!bioSnap.exists()) {
+      throw new Error("Bio page not found.");
+    }
+
+    const bioData = bioSnap.data() as Record<string, unknown>;
+    const ownerId = String(bioData.ownerId ?? bioData.uid ?? "");
+    if (ownerId !== input.ownerUid) {
+      throw new Error("You can only transfer your own bio pages.");
+    }
+
+    const ownerPlan = String(ownerSnap.data()?.plan ?? "free");
+    if (ownerPlan !== "pro") {
+      throw new Error("Upgrade to Pro to transfer bio pages.");
+    }
+
+    const existingPending = (bioData.pendingTransfer ?? null) as Record<string, unknown> | null;
+    if (existingPending && existingPending.status === "pending") {
+      throw new Error("This bio page already has a pending transfer.");
+    }
+
+    tx.update(bioRef, {
+      pendingTransfer: {
+        fromUid: input.ownerUid,
+        fromEmail: normalizedOwnerEmail,
+        toEmail: normalizedRecipientEmail,
+        toUid: recipientUid,
+        requestedAt: serverTimestamp(),
+        status: "pending",
+      },
+      updatedAt: serverTimestamp(),
+    });
+  });
+}
+
+export async function cancelBioPageTransfer(input: {
+  bioId: string;
+  ownerUid: string;
+}): Promise<void> {
+  const bioRef = doc(db, "biopages", input.bioId);
+
+  await runTransaction(db, async (tx) => {
+    const bioSnap = await tx.get(bioRef);
+    if (!bioSnap.exists()) return;
+
+    const bioData = bioSnap.data() as Record<string, unknown>;
+    const ownerId = String(bioData.ownerId ?? bioData.uid ?? "");
+    if (ownerId !== input.ownerUid) {
+      throw new Error("You can only cancel transfers for your own bio pages.");
+    }
+
+    tx.update(bioRef, {
+      pendingTransfer: deleteField(),
+      updatedAt: serverTimestamp(),
+    });
+  });
+}
+
+export async function getPendingTransfersForRecipient(email: string): Promise<PendingBioTransferRecord[]> {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return [];
+
+  const q = query(
+    collection(db, "biopages"),
+    where("pendingTransfer.toEmail", "==", normalizedEmail),
+    where("pendingTransfer.status", "==", "pending")
+  );
+  const snap = await getDocs(q);
+
+  const transfers = await Promise.all(
+    snap.docs.map(async (docSnap) => {
+      const data = docSnap.data() as Record<string, unknown>;
+      const linksSnap = await getDocs(collection(db, "biopages", docSnap.id, "links"));
+      const pendingTransfer = (data.pendingTransfer ?? {}) as Record<string, unknown>;
+
+      return {
+        bioId: docSnap.id,
+        username: String(data.slug ?? docSnap.id),
+        displayName: String(data.displayName ?? data.slug ?? docSnap.id),
+        avatarUrl: typeof data.avatarUrl === "string" && data.avatarUrl ? data.avatarUrl : null,
+        linkCount: linksSnap.size,
+        pendingTransfer: {
+          fromUid: String(pendingTransfer.fromUid ?? ""),
+          fromEmail: String(pendingTransfer.fromEmail ?? ""),
+          toEmail: String(pendingTransfer.toEmail ?? ""),
+          toUid: typeof pendingTransfer.toUid === "string" ? pendingTransfer.toUid : null,
+          status: "pending" as const,
+        },
+      };
+    })
+  );
+
+  return transfers;
+}
+
+export async function acceptBioPageTransfer(input: {
+  bioId: string;
+  recipientUid: string;
+  recipientEmail: string;
+}): Promise<void> {
+  const normalizedRecipientEmail = normalizeEmail(input.recipientEmail);
+  const bioRef = doc(db, "biopages", input.bioId);
+
+  await runTransaction(db, async (tx) => {
+    const bioSnap = await tx.get(bioRef);
+    if (!bioSnap.exists()) {
+      throw new Error("Transfer no longer exists.");
+    }
+
+    const data = bioSnap.data() as Record<string, unknown>;
+    const pendingTransfer = (data.pendingTransfer ?? null) as Record<string, unknown> | null;
+    if (!pendingTransfer || pendingTransfer.status !== "pending") {
+      throw new Error("Transfer no longer exists.");
+    }
+
+    const toEmail = normalizeEmail(String(pendingTransfer.toEmail ?? ""));
+    if (toEmail !== normalizedRecipientEmail) {
+      throw new Error("This transfer is not addressed to your account.");
+    }
+
+    const username = normalizePublicSlug(String(data.slug ?? input.bioId));
+    const usernameRef = doc(db, "usernames", username);
+
+    tx.update(bioRef, {
+      ownerId: input.recipientUid,
+      uid: input.recipientUid,
+      pendingTransfer: deleteField(),
+      updatedAt: serverTimestamp(),
+    });
+
+    tx.set(
+      usernameRef,
+      {
+        uid: input.recipientUid,
+        bioId: input.bioId,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  });
+}
+
+export async function declineBioPageTransfer(input: {
+  bioId: string;
+  recipientEmail: string;
+}): Promise<void> {
+  const normalizedRecipientEmail = normalizeEmail(input.recipientEmail);
+  const bioRef = doc(db, "biopages", input.bioId);
+
+  await runTransaction(db, async (tx) => {
+    const bioSnap = await tx.get(bioRef);
+    if (!bioSnap.exists()) return;
+
+    const data = bioSnap.data() as Record<string, unknown>;
+    const pendingTransfer = (data.pendingTransfer ?? null) as Record<string, unknown> | null;
+    if (!pendingTransfer || pendingTransfer.status !== "pending") return;
+
+    const toEmail = normalizeEmail(String(pendingTransfer.toEmail ?? ""));
+    if (toEmail !== normalizedRecipientEmail) {
+      throw new Error("This transfer is not addressed to your account.");
+    }
+
+    tx.update(bioRef, {
+      pendingTransfer: deleteField(),
+      updatedAt: serverTimestamp(),
+    });
+  });
+}
+
+interface CreateAdditionalBioPageInput {
+  uid: string;
+  username: string;
+  displayName: string;
+  bio?: string;
+}
+
+export async function createAdditionalBioPage(input: CreateAdditionalBioPageInput): Promise<string> {
+  const username = normalizeBioUsername(input.username);
+  if (!isValidBioUsername(username)) {
+    throw new Error("Username must be 3-30 chars and contain only lowercase letters, numbers, and underscores.");
+  }
+
+  const available = await isBioUsernameAvailable(username);
+  if (!available) {
+    throw new Error("This username is already taken. Try another.");
+  }
+
+  const biopageRef = doc(db, "biopages", username);
+  const usernameRef = doc(db, "usernames", username);
+  const linkRef = doc(db, "links", username);
+  const now = serverTimestamp();
+
+  await runTransaction(db, async (tx) => {
+    const [biopageSnap, usernameSnap, linkSnap] = await Promise.all([
+      tx.get(biopageRef),
+      tx.get(usernameRef),
+      tx.get(linkRef),
+    ]);
+
+    if (biopageSnap.exists() || usernameSnap.exists() || linkSnap.exists()) {
+      throw new Error("This username is already taken. Try another.");
+    }
+
+    tx.set(biopageRef, {
+      uid: input.uid,
+      ownerId: input.uid,
+      slug: username,
+      displayName: input.displayName.trim(),
+      bio: (input.bio ?? "").trim(),
+      avatarUrl: "",
+      theme: {
+        ...DEFAULT_THEME,
+        accentColor: "#22d3ee",
+        backgroundColor: "#0f0f12",
+      },
+      socialLinks: [],
+      isPublic: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    tx.set(usernameRef, {
+      uid: input.uid,
+      bioId: username,
+      createdAt: now,
+    });
+  });
+
+  return username;
+}
+
+export async function getBioPageTotalViews(bioId: string, fallback = 0): Promise<number> {
+  const statsSnap = await getDocs(collection(db, "biopages", bioId, "stats"));
+  if (statsSnap.empty) return fallback;
+
+  return statsSnap.docs.reduce((sum, statDoc) => {
+    const data = statDoc.data();
+    return sum + asFiniteNumber(data.totalViews);
+  }, 0);
+}
+
+export async function deleteBioPageById(bioId: string, username?: string): Promise<void> {
+  const batch = writeBatch(db);
+  batch.delete(doc(db, "biopages", bioId));
+
+  if (username) {
+    const normalized = normalizePublicSlug(username);
+    if (normalized) {
+      batch.delete(doc(db, "usernames", normalized));
+    }
+  }
+
+  await batch.commit();
+}
+
+export async function setUserActiveBio(
+  uid: string,
+  activeBioId: string | null,
+  username: string | null
+): Promise<void> {
+  await updateDoc(doc(db, "users", uid), {
+    activeBioId,
+    username,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function getLinkBySlug(slug: string): Promise<Record<string, unknown> | null> {
   const snap = await getDoc(doc(db, "links", slug));
   if (!snap.exists()) return null;
 
@@ -88,6 +489,7 @@ export async function createBioPage(
 
   const pageData = {
     slug: normalizedSlug,
+    uid,
     ownerId: uid,
     displayName: data.displayName ?? normalizedSlug,
     bio: data.bio ?? "",

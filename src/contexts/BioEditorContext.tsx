@@ -6,9 +6,11 @@ import {
   useState,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getBioPage,
@@ -107,8 +109,20 @@ const DEMO_PAGE: BioPageData = {
 /* ── Provider ── */
 
 export function BioEditorProvider({ children }: { children: ReactNode }) {
-  const { user, profile } = useAuth();
-  const activeBioId = profile?.activeBioId ?? null;
+  const { profile } = useAuth();
+  const pathname = usePathname();
+  const routeBioId = useMemo(() => {
+    const match = pathname.match(/^\/d\/biopages\/([^/]+)\/edit\/?$/);
+    if (!match) return null;
+
+    const routeParam = match[1] ?? "";
+    try {
+      return decodeURIComponent(routeParam);
+    } catch {
+      return routeParam;
+    }
+  }, [pathname]);
+  const activeBioId = routeBioId ?? profile?.activeBioId ?? null;
 
   const [data, setData] = useState<BioPageData>(EMPTY_PAGE);
   const [savedData, setSavedData] = useState<BioPageData>(EMPTY_PAGE);
@@ -121,11 +135,20 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
 
   /* ── Load from Firestore on mount / activeBioId change ── */
   useEffect(() => {
+    // Prevent cross-bio save leakage when switching between multiple bios.
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    if (savedIndicatorRef.current) clearTimeout(savedIndicatorRef.current);
+    setIsDirty(false);
+    setSaveStatus("idle");
+
     if (!activeBioId) {
+      setData(EMPTY_PAGE);
+      setSavedData(EMPTY_PAGE);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     let cancelled = false;
 
     async function load() {
@@ -145,6 +168,11 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
           };
           setData(fullData);
           setSavedData(fullData);
+          setIsDirty(false);
+        } else {
+          // Avoid showing stale data when target page is unavailable.
+          setData(EMPTY_PAGE);
+          setSavedData(EMPTY_PAGE);
         }
       } catch (err) {
         console.error("[BioEditor] Failed to load bio page:", err);
@@ -164,14 +192,14 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
     saveTimerRef.current = setTimeout(() => {
-      save();
+      void save();
     }, 2000);
 
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDirty, data]);
+  }, [activeBioId, data, isDirty]);
 
   /* ── Mark dirty helper ── */
   const markDirty = useCallback(() => {

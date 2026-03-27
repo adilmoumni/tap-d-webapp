@@ -23,6 +23,10 @@ const linksTabs: TabItem[] = [
   { id: "qr-codes",  label: "QR codes",  icon: QrCode },
 ];
 
+const bioPagesTabs: TabItem[] = [
+  { id: "all-bios", label: "All bios", icon: List },
+];
+
 const bioContentTabs: TabItem[] = [
   { id: "links",    label: "Links",    icon: List },
   { id: "visitors", label: "Visitors", icon: Users },
@@ -51,7 +55,8 @@ const blogTabs: TabItem[] = [
 const sectionTitles: Record<DashboardSection, string> = {
   analytics: "Analytics",
   links: "Links",
-  bio: "Bio page",
+  biopages: "Bio pages",
+  bio: "Bio pages",
   blog: "Blog",
   settings: "Settings",
 };
@@ -81,6 +86,7 @@ export function SubTabs() {
   let tabs: TabItem[];
   if (activeSection === "analytics") tabs = analyticsTabs;
   else if (activeSection === "links") tabs = linksTabs;
+  else if (activeSection === "biopages") tabs = bioPagesTabs;
   else if (activeSection === "bio") tabs = bioMode === "content" ? bioContentTabs : bioDesignTabs;
   else if (activeSection === "blog") tabs = blogTabs;
   else tabs = settingsTabs;

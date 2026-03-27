@@ -83,7 +83,7 @@ export default function ClaimUsernamePage() {
       });
 
       // Navigate to dashboard
-      window.location.href = "/d/bio"; // Force reload to re-fetch profile context
+      window.location.href = "/d/biopages"; // Force reload to re-fetch profile context
     } catch (err) {
       console.error("[ClaimUsername] Error:", err);
       setError("Something went wrong. Please try again.");

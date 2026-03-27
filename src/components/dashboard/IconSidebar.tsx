@@ -12,13 +12,15 @@ import { cn } from "@/lib/utils";
 const navItems: { section: DashboardSection; label: string; icon: React.ElementType; href: string }[] = [
   { section: "analytics", label: "Analytics", icon: BarChart3, href: "/d/dashboard" },
   { section: "links", label: "Links", icon: Link2, href: "/d/links" },
-  { section: "bio", label: "Bio", icon: User, href: "/d/bio" },
+  { section: "biopages", label: "Bio Pages", icon: User, href: "/d/biopages" },
   { section: "settings", label: "Settings", icon: Settings, href: "/d/settings" },
 ];
 
 const blogNavItem = { section: "blog" as DashboardSection, label: "Blog", icon: PenLine, href: "/d/blog" };
 
 function sectionFromPath(pathname: string): DashboardSection {
+  if (/^\/d\/biopages\/[^/]+\/edit\/?$/.test(pathname)) return "bio";
+  if (pathname.startsWith("/d/biopages")) return "biopages";
   if (pathname.startsWith("/d/bio")) return "bio";
   if (pathname.startsWith("/d/links")) return "links";
   if (pathname.startsWith("/d/blog")) return "blog";

@@ -52,6 +52,17 @@ export interface BioSocialLink {
   order: number;
 }
 
+export type BioTransferStatus = "pending" | "accepted" | "cancelled";
+
+export interface BioPendingTransfer {
+  fromUid: string;
+  fromEmail: string;
+  toEmail: string;
+  toUid: string | null;
+  requestedAt: Timestamp;
+  status: BioTransferStatus;
+}
+
 /* ── Link ── */
 
 export interface BioLink {
@@ -98,6 +109,7 @@ export interface BioPageData {
   links: BioLink[];
   theme: BioTheme;
   isPublic: boolean;
+  pendingTransfer?: BioPendingTransfer | null;
   updatedAt: Timestamp;
   createdAt: Timestamp;
 }

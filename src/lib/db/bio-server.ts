@@ -146,7 +146,7 @@ export async function getBioPageServer(slug: string): Promise<BioPagePlain | nul
 
   return {
     id: bioId,
-    ownerId: d.ownerId,
+    ownerId: d.ownerId ?? d.uid ?? "",
     slug: d.slug ?? slug,
     displayName: d.displayName ?? d.slug ?? slug,
     bio: d.bio ?? "",

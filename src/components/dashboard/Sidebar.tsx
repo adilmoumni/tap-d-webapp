@@ -11,7 +11,7 @@ export function Sidebar() {
   const navItems: { id: DashboardSection; label: string; icon: React.ElementType }[] = [
     { id: "analytics", label: "Analytics", icon: BarChart3 },
     { id: "links", label: "Links", icon: Link2 },
-    { id: "bio", label: "Bio", icon: MonitorSmartphone },
+    { id: "biopages", label: "Bio Pages", icon: MonitorSmartphone },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 

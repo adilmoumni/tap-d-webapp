@@ -1,6 +1,22 @@
 {
   "indexes": [
     {
+      "collectionGroup": "biopages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "biopages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "pendingTransfer.toEmail", "order": "ASCENDING" },
+        { "fieldPath": "pendingTransfer.status", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "blogs",
       "queryScope": "COLLECTION",
       "fields": [
