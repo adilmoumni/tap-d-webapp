@@ -7,6 +7,12 @@ export function DesignWallpaper() {
   const { data, updateTheme } = useBioEditor();
   const activeWall = data.theme.wallpaper;
 
+  const setWallpaper = (value: "flat" | "image" | "gradient") => {
+    // Clear preset backgroundCss so the manual wallpaper takes effect
+    if (data.theme.backgroundCss) updateTheme("backgroundCss", "");
+    updateTheme("wallpaper", value);
+  };
+
   return (
     <div className="font-inter">
       <h2 className="text-[15px] font-semibold text-[#1a1a2e] mb-6">Wallpaper</h2>
@@ -14,7 +20,7 @@ export function DesignWallpaper() {
       <label className="block text-[12px] font-semibold text-[#1a1a2e] mb-3">Background</label>
       <div className="grid grid-cols-3 gap-3">
         <button
-          onClick={() => updateTheme("wallpaper", "flat")}
+          onClick={() => setWallpaper("flat")}
           className={cn(
             "relative p-3 rounded-[12px] border text-center transition-all",
             activeWall === "flat" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"
@@ -25,7 +31,7 @@ export function DesignWallpaper() {
         </button>
 
         <button
-          onClick={() => updateTheme("wallpaper", "image")}
+          onClick={() => setWallpaper( "image")}
           className={cn(
             "relative p-3 rounded-[12px] border text-center transition-all",
             activeWall === "image" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"
@@ -41,7 +47,7 @@ export function DesignWallpaper() {
         </button>
 
         <button
-          onClick={() => updateTheme("wallpaper", "gradient")}
+          onClick={() => setWallpaper( "gradient")}
           className={cn(
             "relative p-3 rounded-[12px] border text-center transition-all",
             activeWall === "gradient" ? "border-[#0a0a0f] bg-white ring-1 ring-[#0a0a0f]" : "border-[#e8e6e2] bg-white hover:border-[#8a8a9a]"

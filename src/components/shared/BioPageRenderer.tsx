@@ -21,17 +21,23 @@ import { motion } from "framer-motion";
 /* ── Font stacks ── */
 
 const FONT_STACKS: Record<BioTheme["fontFamily"], string> = {
-  inter: "'Inter', system-ui, sans-serif",
-  serif: "'Playfair Display', Georgia, serif",
-  mono: "'JetBrains Mono', 'Fira Code', monospace",
+  inter: "var(--font-inter), 'Inter', system-ui, sans-serif",
+  poppins: "var(--font-poppins), 'Poppins', system-ui, sans-serif",
+  dmsans: "var(--font-dmsans), 'DM Sans', system-ui, sans-serif",
+  spacegrotesk: "var(--font-spacegrotesk), 'Space Grotesk', system-ui, sans-serif",
+  sora: "var(--font-sora), 'Sora', system-ui, sans-serif",
+  serif: "var(--font-serif), 'Playfair Display', Georgia, serif",
+  lora: "var(--font-lora), 'Lora', Georgia, serif",
+  mono: "var(--font-jetbrains), 'JetBrains Mono', 'Fira Code', monospace",
 };
 
 /* ── Button radius by style ── */
 
 const RADIUS_MAP: Record<BioTheme["buttonStyle"], string> = {
-  rounded: "12px",
-  pill: "9999px",
   square: "4px",
+  round: "10px",
+  rounder: "18px",
+  full: "9999px",
 };
 
 /* ── Social icon letter fallbacks ── */
@@ -69,6 +75,14 @@ function initials(name: string) {
 
 function resolveButtonStyles(theme: BioTheme) {
   const radius = RADIUS_MAP[theme.buttonStyle];
+  const shadow = theme.buttonShadow ?? "none";
+
+  const shadowMap: Record<string, string> = {
+    none: "none",
+    soft: "0 2px 8px rgba(0,0,0,0.12)",
+    strong: "0 4px 16px rgba(0,0,0,0.24)",
+    hard: `4px 4px 0 ${theme.buttonTextColor}`,
+  };
 
   if (theme.buttonFill === "outline") {
     return {
@@ -76,27 +90,29 @@ function resolveButtonStyles(theme: BioTheme) {
       border: `1.5px solid ${theme.buttonTextColor}`,
       borderRadius: radius,
       color: theme.buttonTextColor,
-      boxShadow: "none",
+      boxShadow: shadowMap[shadow],
     } as const;
   }
 
-  if (theme.buttonFill === "shadow") {
+  if (theme.buttonFill === "glass") {
     return {
-      background: theme.buttonColor,
-      border: `1.5px solid ${theme.buttonTextColor}`,
+      background: "rgba(255,255,255,0.12)",
+      border: "1px solid rgba(255,255,255,0.2)",
       borderRadius: radius,
       color: theme.buttonTextColor,
-      boxShadow: `4px 4px 0 ${theme.buttonTextColor}`,
+      boxShadow: shadowMap[shadow],
+      backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
     } as const;
   }
 
-  // filled (default)
+  // solid (default)
   return {
     background: theme.buttonColor,
     border: "1px solid rgba(0,0,0,0.06)",
     borderRadius: radius,
     color: theme.buttonTextColor,
-    boxShadow: "none",
+    boxShadow: shadowMap[shadow],
   } as const;
 }
 
@@ -304,9 +320,10 @@ export function BioPageRenderer({
     })
     .sort((a, b) => a.order - b.order);
 
-  // Wallpaper background
-  const wallpaperBg =
-    theme.wallpaper === "image" && theme.wallpaperImageUrl
+  // Wallpaper background — theme preset CSS takes priority
+  const wallpaperBg = theme.backgroundCss
+    ? theme.backgroundCss
+    : theme.wallpaper === "image" && theme.wallpaperImageUrl
       ? `url(${theme.wallpaperImageUrl}) center/cover no-repeat fixed`
       : theme.wallpaper === "gradient"
         ? `linear-gradient(160deg, ${theme.accentColor}30 0%, ${theme.backgroundColor} 40%, ${theme.backgroundColor} 60%, ${theme.accentColor}18 100%)`

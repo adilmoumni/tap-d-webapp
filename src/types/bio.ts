@@ -13,11 +13,13 @@ export interface BioTheme {
   buttonTextColor: string;
   accentColor: string;
   textColor: string;
-  fontFamily: "inter" | "serif" | "mono";
-  buttonStyle: "rounded" | "pill" | "square";
-  buttonFill: "filled" | "outline" | "shadow";
+  fontFamily: "inter" | "poppins" | "dmsans" | "spacegrotesk" | "sora" | "serif" | "lora" | "mono";
+  buttonStyle: "square" | "round" | "rounder" | "full";
+  buttonFill: "solid" | "glass" | "outline";
+  buttonShadow?: "none" | "soft" | "strong" | "hard";
   wallpaper: "flat" | "image" | "gradient";
   wallpaperImageUrl?: string;
+  backgroundCss?: string;
   showBranding: boolean;
   showJoinCta: boolean;
   headerLayout: "classic" | "hero";
@@ -31,8 +33,9 @@ export const DEFAULT_THEME: BioTheme = {
   accentColor: "#e8b86d",
   textColor: "#1a1a2e",
   fontFamily: "inter",
-  buttonStyle: "rounded",
-  buttonFill: "filled",
+  buttonStyle: "round",
+  buttonFill: "solid",
+  buttonShadow: "none",
   wallpaper: "flat",
   showBranding: true,
   showJoinCta: true,

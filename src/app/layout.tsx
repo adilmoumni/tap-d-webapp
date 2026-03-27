@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Plus_Jakarta_Sans, JetBrains_Mono, Inter } from "next/font/google";
+import { Playfair_Display, Plus_Jakarta_Sans, JetBrains_Mono, Inter, Poppins, DM_Sans, Space_Grotesk, Lora, Sora } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
@@ -27,6 +27,41 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   display: "swap",
   weight: ["400", "500", "600"],
+});
+
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dmsans",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-spacegrotesk",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const sora = Sora({
+  variable: "--font-sora",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -134,7 +169,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playfair.variable} ${jakartaSans.variable} ${jetbrainsMono.variable} ${inter.variable} h-full antialiased`}
+      className={`${playfair.variable} ${jakartaSans.variable} ${jetbrainsMono.variable} ${inter.variable} ${poppins.variable} ${dmSans.variable} ${spaceGrotesk.variable} ${lora.variable} ${sora.variable} h-full antialiased`}
     >
       <head>
         <script

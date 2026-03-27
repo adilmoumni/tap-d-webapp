@@ -2,8 +2,19 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Avatars — user can only write to their own folder
-    match /avatars/{uid}/{allPaths=**} {
+    // Bio page assets — avatars, wallpapers, link thumbnails
+    // Path: biopages/{bioId}/avatar.jpg, biopages/{bioId}/wallpaper.jpg,
+    //        biopages/{bioId}/link-thumbs/{linkId}.jpg
+    match /biopages/{bioId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // User profile images
+    // Path: users/{uid}/profile.jpg
+    match /users/{uid}/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null
         && request.auth.uid == uid
@@ -11,22 +22,11 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
-    // Wallpapers — same rules
-    match /wallpapers/{uid}/{allPaths=**} {
+    // Resized images written by the Firebase Resize Images extension
+    // Path: thumbnails/biopages/{bioId}/avatar_400x400.webp, etc.
+    match /thumbnails/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null
-        && request.auth.uid == uid
-        && request.resource.size < 5 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
-    }
-
-    // Thumbnails — for bio links
-    match /thumbnails/{uid}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null
-        && request.auth.uid == uid
-        && request.resource.size < 2 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+      // Only the extension (admin SDK) writes here — no client writes needed
     }
 
     // Deny everything else

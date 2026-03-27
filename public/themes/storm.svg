@@ -1,0 +1,14 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 1200'>
+  <filter id='f' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
+    <feTurbulence type='fractalNoise' baseFrequency='0.006 0.004' numOctaves='3' seed='22' result='n'/>
+    <feTurbulence type='turbulence' baseFrequency='0.003 0.005' numOctaves='2' seed='10' result='w'/>
+    <feDisplacementMap in='n' in2='w' scale='160'/>
+    <feComponentTransfer>
+      <feFuncR type='table' tableValues='0.08 0.14 0.22 0.18 0.1'/>
+      <feFuncG type='table' tableValues='0.1 0.16 0.25 0.2 0.12'/>
+      <feFuncB type='table' tableValues='0.16 0.25 0.35 0.28 0.18'/>
+    </feComponentTransfer>
+    <feGaussianBlur stdDeviation='3'/>
+  </filter>
+  <rect width='100%' height='100%' filter='url(#f)'/>
+</svg>

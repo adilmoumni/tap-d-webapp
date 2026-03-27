@@ -9,6 +9,11 @@
   --font-serif: "Playfair Display", Georgia, serif;
   --font-mono: "JetBrains Mono", monospace;
   --font-inter: "Inter", system-ui, sans-serif;
+  --font-poppins: "Poppins", system-ui, sans-serif;
+  --font-dmsans: "DM Sans", system-ui, sans-serif;
+  --font-spacegrotesk: "Space Grotesk", system-ui, sans-serif;
+  --font-lora: "Lora", Georgia, serif;
+  --font-sora: "Sora", system-ui, sans-serif;
 
   /* --- Brand / Page Background--- */
   --color-page-bg: #ffe7bf; /* Professional soft gold/cream */
