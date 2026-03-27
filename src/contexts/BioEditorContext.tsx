@@ -41,6 +41,7 @@ import { DEFAULT_THEME } from "@/types/bio";
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 interface BioEditorContextValue {
+  activeBioId: string | null;
   data: BioPageData;
   isDirty: boolean;
   saveStatus: SaveStatus;
@@ -434,6 +435,7 @@ export function BioEditorProvider({ children }: { children: ReactNode }) {
   return (
     <BioEditorContext.Provider
       value={{
+        activeBioId,
         data,
         isDirty,
         saveStatus,

@@ -16,12 +16,14 @@ export interface BioTheme {
   fontFamily: "inter" | "poppins" | "dmsans" | "spacegrotesk" | "sora" | "serif" | "lora" | "mono";
   buttonStyle: "square" | "round" | "rounder" | "full";
   buttonFill: "solid" | "glass" | "outline";
+  buttonSize: "small" | "normal" | "large";
   buttonShadow?: "none" | "soft" | "strong" | "hard";
   wallpaper: "flat" | "image" | "gradient";
   wallpaperImageUrl?: string;
   backgroundCss?: string;
   showBranding: boolean;
   showJoinCta: boolean;
+  showUsername: boolean;
   headerLayout: "classic" | "hero";
   titleSize: "small" | "large";
 }
@@ -35,10 +37,12 @@ export const DEFAULT_THEME: BioTheme = {
   fontFamily: "inter",
   buttonStyle: "round",
   buttonFill: "solid",
+  buttonSize: "normal",
   buttonShadow: "none",
   wallpaper: "flat",
   showBranding: true,
   showJoinCta: true,
+  showUsername: true,
   headerLayout: "classic",
   titleSize: "small",
 };

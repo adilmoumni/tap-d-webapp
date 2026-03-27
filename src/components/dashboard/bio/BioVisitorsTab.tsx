@@ -28,6 +28,12 @@ function timeAgo(iso: string | null): string {
   return `${d}d ago`;
 }
 
+function formatDayLabel(date: string): string {
+  const parsed = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return date.slice(5);
+  return parsed.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 const DEVICE_ICON: Record<"ios" | "android" | "desktop", React.ElementType> = {
   ios:     Smartphone,
   android: Tablet,
@@ -118,17 +124,27 @@ export function BioVisitorsTab() {
   const [visitors, setVisitors] = useState<BioVisitorDoc[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (!bioId) return;
-    setLoading(true);
-    Promise.all([
-      getBioDailyStats(bioId, 30),
-      getRecentBioVisitors(bioId, 50),
-    ])
-      .then(([s, v]) => { setStats(s); setVisitors(v); })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+    async function loadVisitorData() {
+      setLoading(true);
+      try {
+        const [s, v] = await Promise.all([
+          getBioDailyStats(bioId, 30),
+          getRecentBioVisitors(bioId, 50),
+        ]);
+        setStats(s);
+        setVisitors(v);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to load visitor data.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    void loadVisitorData();
   }, [bioId]);
 
   /* derived totals */
@@ -200,6 +216,15 @@ export function BioVisitorsTab() {
   );
 
   const maxViews   = useMemo(() => Math.max(1, ...stats.map((s) => s.totalViews)), [stats]);
+  const safeSelectedDate = useMemo(
+    () => (selectedDate && stats.some((item) => item.date === selectedDate) ? selectedDate : null),
+    [selectedDate, stats]
+  );
+  const activeDate = hoveredDate ?? safeSelectedDate;
+  const activeDay = useMemo(
+    () => stats.find((item) => item.date === activeDate) ?? null,
+    [activeDate, stats]
+  );
 
   /* dominant device */
   const dominantDevice = useMemo<"ios" | "android" | "desktop">(() => {
@@ -262,52 +287,89 @@ export function BioVisitorsTab() {
             <p className="text-[11px] text-[#b0aea8]">Views will appear here once someone visits your public bio page.</p>
           </div>
         ) : (
-          <>
+          <div className="rounded-[16px] border border-[#e8e6e2] bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+            <div className="flex items-center justify-between mb-3 gap-2">
+              <span className="text-[12px] font-medium text-[#1a1a2e]">Daily visitors</span>
+              <span className="text-[11px] text-[#8a8a9a]">
+                {activeDay
+                  ? `${formatDayLabel(activeDay.date)} · ${activeDay.totalViews} views`
+                  : "Hover or tap a bar"}
+              </span>
+            </div>
+
             <div className="flex gap-2">
               {/* Y-axis */}
-              <div className="flex flex-col justify-between items-end" style={{ minWidth: 28, height: 80 }}>
-                <span className="text-[8px] text-[#8a8a9a] tabular-nums">{maxViews}</span>
-                <span className="text-[8px] text-[#8a8a9a] tabular-nums">{Math.round(maxViews / 2)}</span>
+              <div className="flex flex-col justify-between items-end" style={{ minWidth: 30, height: 100 }}>
+                <span className="text-[9px] text-[#8a8a9a] tabular-nums">{maxViews}</span>
+                <span className="text-[9px] text-[#8a8a9a] tabular-nums">{Math.round(maxViews / 2)}</span>
                 <span className="text-[8px] text-[#8a8a9a] tabular-nums">0</span>
               </div>
               {/* Bars */}
-              <div className="flex-1">
-                <div className="flex items-end gap-0.5 h-24">
+              <div className="relative flex-1">
+                <div className="pointer-events-none absolute inset-0 rounded-[12px] border border-[#f0eeea]" />
+                <div className="pointer-events-none absolute left-0 right-0 top-0 border-t border-[#f8f7f5]" />
+                <div className="pointer-events-none absolute left-0 right-0 top-1/2 border-t border-[#f8f7f5]" />
+                <div className="pointer-events-none absolute left-0 right-0 bottom-0 border-t border-[#f8f7f5]" />
+
+                <div className="relative flex items-end gap-0.5 h-[108px] px-2 pt-2">
                   {stats.map((s) => {
                     const pct = Math.round((s.totalViews / maxViews) * 100);
+                    const isActive = activeDate === s.date;
                     return (
                       <div
                         key={s.date}
-                        className="flex flex-col items-center flex-1 min-w-0 group"
+                        className="flex flex-col items-center flex-1 min-w-0"
                       >
-                        <div className="relative w-full flex items-end" style={{ height: 80 }}>
-                          <div
-                            title={`${s.date.slice(5)}: ${s.totalViews}`}
-                            className="w-full rounded-t-sm bg-[#e8b86d] group-hover:bg-[#d4a85c] transition-colors"
-                            style={{ height: `${Math.max(pct, s.totalViews > 0 ? 4 : 0)}%` }}
+                        <button
+                          type="button"
+                          onMouseEnter={() => setHoveredDate(s.date)}
+                          onMouseLeave={() => setHoveredDate(null)}
+                          onFocus={() => setHoveredDate(s.date)}
+                          onBlur={() => setHoveredDate(null)}
+                          onClick={() =>
+                            setSelectedDate((prev) => (prev === s.date ? null : s.date))
+                          }
+                          aria-label={`${formatDayLabel(s.date)}: ${s.totalViews} visitors`}
+                          title={`${formatDayLabel(s.date)}: ${s.totalViews} visitors`}
+                          className="relative w-full flex items-end outline-none"
+                          style={{ height: 100 }}
+                        >
+                          {isActive && (
+                            <span className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-1 rounded-full border border-[#ead9b3] bg-[#fff8e7] text-[10px] font-semibold text-[#8b6b2d] shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+                              {s.totalViews}
+                            </span>
+                          )}
+                          <span
+                            className={cn(
+                              "w-full rounded-t-[7px] border border-b-0 transition-all duration-150",
+                              isActive
+                                ? "bg-[#d7a754] border-[#c99642]"
+                                : "bg-[#e8b86d] border-[#ddb05f] hover:bg-[#ddb05f]"
+                            )}
+                            style={{ height: `${Math.max(pct, s.totalViews > 0 ? 5 : 0)}%` }}
                           />
-                        </div>
+                        </button>
                       </div>
                     );
                   })}
                 </div>
+
                 {/* x-axis labels */}
-                <div className="flex mt-1">
+                <div className="flex mt-1 px-2">
                   {stats
-                    .filter((_, i) => i % 5 === 0 || i === stats.length - 1)
-                    .map((s) => (
+                    .map((s, i) => (
                       <span
                         key={s.date}
                         className="text-[9px] text-[#8a8a9a]"
                         style={{ flex: "1 1 0" }}
                       >
-                        {s.date.slice(5)}
+                        {i % 5 === 0 || i === stats.length - 1 ? s.date.slice(5) : ""}
                       </span>
                     ))}
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
 

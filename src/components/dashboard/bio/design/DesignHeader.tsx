@@ -6,6 +6,25 @@ import { AvatarUpload } from "@/components/dashboard/bio/AvatarUpload";
 import { uploadAvatar } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
 
+function HeaderToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <div
+      role="switch"
+      aria-checked={on}
+      onClick={onToggle}
+      className={cn(
+        "relative w-9 h-5 rounded-[10px] cursor-pointer transition-colors duration-200 flex-shrink-0",
+        on ? "bg-[#22c55e]" : "bg-[#e8e6e2]"
+      )}
+    >
+      <div
+        className="absolute top-[2px] w-4 h-4 rounded-full bg-white transition-all duration-200 shadow-sm"
+        style={{ left: on ? "calc(100% - 18px)" : "2px" }}
+      />
+    </div>
+  );
+}
+
 export function DesignHeader() {
   const { data, updateField, updateTheme } = useBioEditor();
   const { profile } = useAuth();
@@ -97,6 +116,20 @@ export function DesignHeader() {
           rows={3}
           className="w-full px-[14px] py-[10px] border border-[#e8e6e2] rounded-[10px] text-[13px] text-[#1a1a2e] focus:border-[#e8b86d] focus:ring-1 focus:ring-[#e8b86d] outline-none transition-all resize-none"
         />
+      </div>
+
+      {/* Username visibility */}
+      <div className="rounded-[16px] border border-[#e8e6e2] bg-white overflow-hidden">
+        <div className="flex items-center justify-between p-4">
+          <div>
+            <div className="text-[13px] font-semibold text-[#1a1a2e] mb-0.5">Show username</div>
+            <div className="text-[11px] text-[#8a8a9a]">Display the @slug under your name</div>
+          </div>
+          <HeaderToggle
+            on={data.theme.showUsername !== false}
+            onToggle={() => updateTheme("showUsername", !(data.theme.showUsername !== false))}
+          />
+        </div>
       </div>
     </div>
   );

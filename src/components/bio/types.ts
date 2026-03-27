@@ -14,6 +14,7 @@ export interface BioTheme {
   font: "inter" | "serif" | "mono";
   headerFont: "inter" | "serif" | "mono";
   showBranding: boolean;
+  showUsername: boolean;
 }
 
 export interface BioLinkItem {
@@ -49,6 +50,7 @@ export const DEFAULT_BIO_THEME: BioTheme = {
   font: "inter",
   headerFont: "serif",
   showBranding: true,
+  showUsername: true,
 };
 
 export const FONT_STACKS: Record<BioTheme["font"], string> = {

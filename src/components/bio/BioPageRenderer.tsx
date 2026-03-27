@@ -141,16 +141,18 @@ export function BioPageRenderer({ data, preview = false, className = "" }: BioPa
       </h1>
 
       {/* ── Username ── */}
-      <p
-        className="text-center font-mono opacity-60"
-        style={{
-          fontSize: "var(--bio-username, 12px)",
-          marginTop: 2,
-          color: theme.textColor,
-        }}
-      >
-        @{data.username}
-      </p>
+      {(theme.showUsername ?? true) && (
+        <p
+          className="text-center font-mono opacity-60"
+          style={{
+            fontSize: "var(--bio-username, 12px)",
+            marginTop: 2,
+            color: theme.textColor,
+          }}
+        >
+          @{data.username}
+        </p>
+      )}
 
       {/* ── Bio text ── */}
       {data.bio && (

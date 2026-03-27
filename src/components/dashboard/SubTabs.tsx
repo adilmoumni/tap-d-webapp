@@ -3,8 +3,8 @@
 import {
   BarChart3, Smartphone, Globe, ExternalLink,
   List, QrCode, Users,
-  User, LayoutTemplate, ImageIcon, Type, Square, Palette, AlignJustify,
-  CreditCard, KeyRound, PenLine,
+  User, LayoutTemplate, ImageIcon, Type, Square, Palette, AlignJustify, SlidersHorizontal,
+  PenLine,
 } from "lucide-react";
 import { useDashboard, type DashboardSection } from "@/contexts/DashboardContext";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,7 @@ const bioPagesTabs: TabItem[] = [
 const bioContentTabs: TabItem[] = [
   { id: "links",    label: "Links",    icon: List },
   { id: "visitors", label: "Visitors", icon: Users },
+  { id: "settings", label: "Settings", icon: SlidersHorizontal },
 ];
 
 const bioDesignTabs: TabItem[] = [

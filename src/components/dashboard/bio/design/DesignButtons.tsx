@@ -31,6 +31,30 @@ const SHADOWS: { id: NonNullable<BioTheme["buttonShadow"]>; label: string }[] = 
   { id: "hard",   label: "Hard" },
 ];
 
+/* ── Size options ── */
+
+const SIZES: {
+  id: BioTheme["buttonSize"];
+  label: string;
+  helper: string;
+}[] = [
+  {
+    id: "small",
+    label: "Small",
+    helper: "Compact links, fits more buttons on screen",
+  },
+  {
+    id: "normal",
+    label: "Normal",
+    helper: "Balanced spacing for most pages",
+  },
+  {
+    id: "large",
+    label: "Large",
+    helper: "Bigger, more prominent call-to-action",
+  },
+];
+
 /* ── Color presets ── */
 
 const BTN_COLORS = ["#f5f3f0", "#ffffff", "#1a1a2e", "#e8b86d", "#a3e8c8", "#e8a0bf", "#a0c4e8", "#0a0a0f"];
@@ -41,6 +65,7 @@ export function DesignButtons() {
   const activeFill = data.theme.buttonFill;
   const activeCorner = data.theme.buttonStyle;
   const activeShadow = data.theme.buttonShadow ?? "none";
+  const activeSize = data.theme.buttonSize ?? "normal";
 
   const showShadow = activeFill === "solid" || activeFill === "outline";
   const showButtonColor = activeFill === "solid";
@@ -110,6 +135,30 @@ export function DesignButtons() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Button size */}
+      <div className="mb-8">
+        <label className="block text-[12px] font-semibold text-[#1a1a2e] mb-3">Button size</label>
+        <div className="flex flex-wrap gap-2">
+          {SIZES.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => updateTheme("buttonSize", s.id)}
+              className={cn(
+                "rounded-full border transition-all px-3 py-1.5 text-[11px] font-medium",
+                activeSize === s.id
+                  ? "border-[#0a0a0f] bg-[#0a0a0f] text-white"
+                  : "border-[#d9d6cf] bg-white text-[#6f6d67] hover:border-[#8a8a9a] hover:text-[#1a1a2e]"
+              )}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-[10px] text-[#8a8a9a] mt-2">
+          {SIZES.find((s) => s.id === activeSize)?.helper}
+        </p>
       </div>
 
       {/* Shadow — visible for solid & outline only */}

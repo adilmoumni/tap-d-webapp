@@ -16,6 +16,7 @@ import { normalizePublicSlug } from "@/lib/slug";
 import { BioLinksEditor } from "@/components/dashboard/bio/BioLinksEditor";
 import { BioDesignEditor } from "@/components/dashboard/bio/design/BioDesignEditor";
 import { BioVisitorsTab } from "@/components/dashboard/bio/BioVisitorsTab";
+import { BioSettingsTab } from "@/components/dashboard/bio/BioSettingsTab";
 
 function readUsernameParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value[0] ?? "";
@@ -66,6 +67,7 @@ export default function BioPageEditRoute() {
       return;
     }
 
+    const currentUser = user;
     let cancelled = false;
 
     async function resolveAndActivate() {
@@ -73,7 +75,7 @@ export default function BioPageEditRoute() {
       setError(null);
 
       try {
-        const userPages = await getUserBiopages(user.uid);
+        const userPages = await getUserBiopages(currentUser.uid);
         const targetPage = userPages.find((page) =>
           isTargetPageMatch(page, targetBioRef, targetSlug)
         );
@@ -91,7 +93,7 @@ export default function BioPageEditRoute() {
           return;
         }
 
-        await setUserActiveBio(user.uid, targetPage.id, targetPage.username);
+        await setUserActiveBio(currentUser.uid, targetPage.id, targetPage.username);
 
         if (!cancelled) {
           setResolving(false);
@@ -140,6 +142,7 @@ export default function BioPageEditRoute() {
         </div>
       );
     }
+    if (activeTab === "settings") return <BioSettingsTab />;
     return <BioLinksEditor />;
   }
 

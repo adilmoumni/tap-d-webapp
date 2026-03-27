@@ -5,6 +5,7 @@ import { useBioEditor } from "@/contexts/BioEditorContext";
 import { BioLinksEditor } from "@/components/dashboard/bio/BioLinksEditor";
 import { BioDesignEditor } from "@/components/dashboard/bio/design/BioDesignEditor";
 import { BioVisitorsTab } from "@/components/dashboard/bio/BioVisitorsTab";
+import { BioSettingsTab } from "@/components/dashboard/bio/BioSettingsTab";
 import { Loader2 } from "lucide-react";
 
 export default function BioPage() {
@@ -27,6 +28,7 @@ export default function BioPage() {
         <BioVisitorsTab />
       </div>
     );
+    if (activeTab === "settings") return <BioSettingsTab />;
     return <BioLinksEditor />;
   }
 

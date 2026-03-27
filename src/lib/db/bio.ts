@@ -143,14 +143,24 @@ export type PendingBioTransferRecord = {
 };
 
 async function findUserUidByEmail(email: string): Promise<string | null> {
-  const q = query(
-    collection(db, "users"),
-    where("email", "==", email),
-    limit(1)
-  );
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return snap.docs[0].id;
+  try {
+    const q = query(
+      collection(db, "users"),
+      where("email", "==", email),
+      limit(1)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    return snap.docs[0].id;
+  } catch (err) {
+    const code = (err as { code?: string } | null)?.code ?? "";
+    // Most clients can't query arbitrary users due security rules.
+    // Transfer still works by matching recipient email at accept time.
+    if (code === "permission-denied" || code === "firestore/permission-denied") {
+      return null;
+    }
+    throw err;
+  }
 }
 
 export async function requestBioPageTransfer(input: {

@@ -222,6 +222,22 @@ const ANIM_MAP: Record<string, string> = {
   swipe: "tap-swipe 1.2s ease-in-out infinite",
 };
 
+const BUTTON_SIZE_SCALE: Record<NonNullable<BioTheme["buttonSize"]>, number> = {
+  small: 0.88,
+  normal: 1,
+  large: 1.14,
+};
+
+function scaleCssSize(value: string, factor: number, min = 1): string {
+  const numeric = parseFloat(value);
+  if (!Number.isFinite(numeric)) return value;
+
+  const unitMatch = value.match(/[a-z%]+$/i);
+  const unit = unitMatch ? unitMatch[0] : "px";
+  const scaled = Math.max(min, Number((numeric * factor).toFixed(2)));
+  return `${scaled}${unit}`;
+}
+
 /* ── Component ── */
 
 import { logBioClick } from "@/lib/db/bio-analytics";
@@ -251,6 +267,13 @@ export function BioPageRenderer({
   const isPublic = variant === "public";
   const isHero = theme.headerLayout === "hero";
   const isLargeTitle = theme.titleSize === "large";
+  const buttonSize = theme.buttonSize ?? "normal";
+  const buttonScale = BUTTON_SIZE_SCALE[buttonSize];
+  const linkSize = {
+    font: scaleCssSize(sizes.linkFont, buttonScale, 9),
+    py: scaleCssSize(sizes.linkPy, buttonScale, 7),
+    px: scaleCssSize(sizes.linkPx, buttonScale, 9),
+  };
 
   // Check for redirect-priority link (public only)
   const hasAnimations = (data.links ?? []).some(
@@ -328,6 +351,7 @@ export function BioPageRenderer({
       : theme.wallpaper === "gradient"
         ? `linear-gradient(160deg, ${theme.accentColor}30 0%, ${theme.backgroundColor} 40%, ${theme.backgroundColor} 60%, ${theme.accentColor}18 100%)`
         : theme.backgroundColor;
+  const dividerColor = theme.accentColor || theme.buttonTextColor || theme.textColor;
 
   // Wrapper for optional framer-motion animation
   const Wrap = isPublic ? motion.div : "div";
@@ -361,23 +385,54 @@ export function BioPageRenderer({
           className="relative overflow-hidden self-stretch rounded-t-2xl"
           style={{
             height: HERO_HEIGHT[variant],
+            boxShadow: "inset 0 -42px 60px -26px rgba(0,0,0,0.62)",
           }}
         >
           {data.avatarUrl ? (
             <>
-              {/* Sharp profile image */}
+              {/* Base hero image */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={data.avatarUrl}
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover object-top"
-              />
-              {/* Subtle gradient fade at bottom */}
-              <div
-                className="absolute left-0 right-0 bottom-0"
                 style={{
-                  height: "40%",
-                  background: `linear-gradient(180deg, transparent 0%, ${theme.backgroundColor} 100%)`,
+                  WebkitMaskImage:
+                    "linear-gradient(to bottom, #000 0%, #000 60%, rgba(0,0,0,0.9) 76%, rgba(0,0,0,0.45) 88%, transparent 100%)",
+                  maskImage:
+                    "linear-gradient(to bottom, #000 0%, #000 60%, rgba(0,0,0,0.9) 76%, rgba(0,0,0,0.45) 88%, transparent 100%)",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskRepeat: "no-repeat",
+                  WebkitMaskSize: "100% 100%",
+                  maskSize: "100% 100%",
+                }}
+              />
+              {/* Soft bottom vignette for readability and seamless transition */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: `linear-gradient(
+                    180deg,
+                    rgba(0,0,0,0) 0%,
+                    rgba(0,0,0,0.08) 50%,
+                    rgba(0,0,0,0.22) 72%,
+                    rgba(0,0,0,0.42) 88%,
+                    rgba(0,0,0,0.58) 100%
+                  )`,
+                }}
+              />
+              {/* Feather haze right at the seam */}
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  left: "-6%",
+                  right: "-6%",
+                  bottom: "-18px",
+                  height: variant === "public" ? "98px" : variant === "full" ? "78px" : "60px",
+                  background:
+                    "linear-gradient(180deg, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.14) 42%, rgba(0,0,0,0) 100%)",
+                  filter: "blur(20px)",
+                  opacity: 0.72,
                 }}
               />
             </>
@@ -389,6 +444,16 @@ export function BioPageRenderer({
               }}
             />
           )}
+          {/* Premium divider between hero and next section */}
+          <div
+            className="absolute left-0 right-0 bottom-0 pointer-events-none"
+            style={{
+              height: "1px",
+              background: `linear-gradient(to right, transparent, ${dividerColor}, transparent)`,
+              boxShadow: `0 0 10px ${dividerColor}`,
+              opacity: 0.62,
+            }}
+          />
         </div>
       )}
 
@@ -448,17 +513,19 @@ export function BioPageRenderer({
       </Wrap>
 
       {/* ── Username ── */}
-      <Wrap
-        {...(isPublic ? fadeUp : {})}
-        className="text-center font-mono opacity-60"
-        style={{
-          fontSize: sizes.usernameSize,
-          marginTop: "2px",
-          color: theme.textColor,
-        }}
-      >
-        @{data.slug}
-      </Wrap>
+      {(theme.showUsername ?? true) && (
+        <Wrap
+          {...(isPublic ? fadeUp : {})}
+          className="text-center font-mono opacity-60"
+          style={{
+            fontSize: sizes.usernameSize,
+            marginTop: "2px",
+            color: theme.textColor,
+          }}
+        >
+          @{data.slug}
+        </Wrap>
+      )}
 
       {/* ── Bio text ── */}
       {data.bio && (
@@ -536,6 +603,7 @@ export function BioPageRenderer({
             theme={theme}
             btnStyle={btnStyle}
             sizes={sizes}
+            linkSize={linkSize}
             variant={variant}
             isPublic={isPublic}
             fadeUp={fadeUp}
@@ -548,7 +616,7 @@ export function BioPageRenderer({
         {visibleLinks.length === 0 && (
           <p
             className="text-center py-6 opacity-40"
-            style={{ fontSize: sizes.linkFont, color: theme.textColor }}
+            style={{ fontSize: linkSize.font, color: theme.textColor }}
           >
             No links yet.
           </p>
@@ -589,8 +657,8 @@ export function BioPageRenderer({
               <div
                 className="w-full rounded-full flex items-center justify-center font-semibold"
                 style={{
-                  padding: `${variant === "phone" ? "8px" : "12px"} ${sizes.linkPx}`,
-                  fontSize: variant === "phone" ? "10px" : "13px",
+                  padding: `${variant === "phone" ? "8px" : "12px"} ${linkSize.px}`,
+                  fontSize: linkSize.font,
                   background: theme.textColor + "0a",
                   color: theme.textColor,
                   border: `1px solid ${theme.textColor}15`,
@@ -763,6 +831,7 @@ function LinkCard({
   theme,
   btnStyle,
   sizes,
+  linkSize,
   variant,
   isPublic,
   fadeUp,
@@ -774,6 +843,7 @@ function LinkCard({
   theme: BioTheme;
   btnStyle: ReturnType<typeof resolveButtonStyles>;
   sizes: (typeof VARIANT_SIZES)[Variant];
+  linkSize: { font: string; py: string; px: string };
   variant: Variant;
   isPublic: boolean;
   fadeUp: Record<string, unknown>;
@@ -891,8 +961,8 @@ function LinkCard({
           <div
             className="flex items-center gap-2 w-full"
             style={{
-              padding: `${variant === "phone" ? "8px" : "12px"} ${sizes.linkPx}`,
-              fontSize: sizes.linkFont,
+              padding: `${variant === "phone" ? "8px" : "12px"} ${linkSize.px}`,
+              fontSize: linkSize.font,
               fontWeight: 600,
             }}
           >
@@ -930,11 +1000,11 @@ function LinkCard({
         target={isLocked ? undefined : target}
         rel={isLocked ? undefined : rel}
         onClick={handleClick}
-        className={`flex items-center justify-center w-full transition-all duration-200 ${isPublic ? "hover:-translate-y-1 hover:shadow-lg" : ""}`}
+        className={`relative w-full transition-all duration-200 ${isPublic ? "hover:-translate-y-1 hover:shadow-lg" : ""}`}
         style={{
           ...btnStyle,
-          padding: `${sizes.linkPy} ${sizes.linkPx}`,
-          fontSize: sizes.linkFont,
+          padding: `${linkSize.py} ${linkSize.px}`,
+          fontSize: linkSize.font,
           fontWeight: 600,
           textDecoration: "none",
           cursor: isPublic ? "pointer" : "default",
@@ -942,6 +1012,18 @@ function LinkCard({
           ...animStyle,
         }}
       >
+        {/* Always-center title layer so icons/badges never shift text */}
+        <span
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          style={{ padding: `0 ${linkSize.px}` }}
+        >
+          <span className="truncate text-center" style={{ maxWidth: "72%" }}>
+            {link.title}
+          </span>
+        </span>
+
+        <span className="relative z-[1] flex items-center justify-between w-full">
+          <span className="flex items-center min-w-0">
         {/* Lock indicator */}
         {isLocked && (
           <svg
@@ -1002,8 +1084,7 @@ function LinkCard({
 
           return null;
         })()}
-
-        <span className="flex-1 truncate">{link.title}</span>
+          </span>
 
         {link.isSmart && (
           <span
@@ -1019,6 +1100,7 @@ function LinkCard({
             Smart
           </span>
         )}
+        </span>
       </LinkWrap>
 
       {/* Lock modal */}

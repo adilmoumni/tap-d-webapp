@@ -259,9 +259,14 @@ export default function BioPagesListPage() {
       setTransferPage(null);
       await fetchDashboardData(false);
     } catch (err) {
+      const rawMessage = err instanceof Error ? err.message : "";
+      if (rawMessage.includes("Missing or insufficient permissions")) {
+        setTransferError("Transfer is blocked by Firestore rules. Make sure your account plan is set to 'pro'.");
+        return;
+      }
       setTransferError(
-        err instanceof Error && err.message
-          ? err.message
+        rawMessage
+          ? rawMessage
           : "Something went wrong. Please try again."
       );
     } finally {
