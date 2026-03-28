@@ -182,6 +182,9 @@ const HERO_HEIGHT: Record<Variant, string> = {
   public: "360px",
 };
 
+const HERO_RADIAL_MASK =
+  "radial-gradient(110.26% 96% at 50% 0%, rgba(0,0,0,1) 50%, rgba(0,0,0,0.99) 54.68%, rgba(0,0,0,0.97) 58.79%, rgba(0,0,0,0.94) 62.4%, rgba(0,0,0,0.9) 65.61%, rgba(0,0,0,0.85) 68.52%, rgba(0,0,0,0.79) 71.2%, rgba(0,0,0,0.72) 73.75%, rgba(0,0,0,0.65) 76.25%, rgba(0,0,0,0.57) 78.8%, rgba(0,0,0,0.48) 81.48%, rgba(0,0,0,0.39) 84.39%, rgba(0,0,0,0.3) 87.6%, rgba(0,0,0,0.2) 91.21%, rgba(0,0,0,0.1) 95.32%, rgba(0,0,0,0) 100%)";
+
 /* ── Priority animation CSS classes ── */
 
 const PRIORITY_ANIMATIONS = `
@@ -274,6 +277,15 @@ export function BioPageRenderer({
     py: scaleCssSize(sizes.linkPy, buttonScale, 7),
     px: scaleCssSize(sizes.linkPx, buttonScale, 9),
   };
+  const heroOverlapRatio = 0.2;
+  const heroContentOffset = variant === "public"
+    ? `calc((min(100vw, 480px) - 80px) * -${heroOverlapRatio})`
+    : variant === "full"
+      ? `calc(${HERO_HEIGHT.full} * -${heroOverlapRatio})`
+      : `calc(${HERO_HEIGHT.phone} * -${heroOverlapRatio})`;
+  const heroTextShadow = isHero && data.avatarUrl
+    ? "0 2px 10px rgba(0,0,0,0.45), 0 8px 24px rgba(0,0,0,0.35)"
+    : undefined;
 
   // Check for redirect-priority link (public only)
   const hasAnimations = (data.links ?? []).some(
@@ -351,8 +363,6 @@ export function BioPageRenderer({
       : theme.wallpaper === "gradient"
         ? `linear-gradient(160deg, ${theme.accentColor}30 0%, ${theme.backgroundColor} 40%, ${theme.backgroundColor} 60%, ${theme.accentColor}18 100%)`
         : theme.backgroundColor;
-  const dividerColor = theme.accentColor || theme.buttonTextColor || theme.textColor;
-
   // Wrapper for optional framer-motion animation
   const Wrap = isPublic ? motion.div : "div";
   const LinkWrap = isPublic ? motion.a : "a";
@@ -382,78 +392,83 @@ export function BioPageRenderer({
       {/* ── Hero header background (profile image, blur only at bottom) ── */}
       {isHero && (
         <div
-          className="relative overflow-hidden self-stretch rounded-t-2xl"
-          style={{
-            height: HERO_HEIGHT[variant],
-            boxShadow: "inset 0 -42px 60px -26px rgba(0,0,0,0.62)",
-          }}
+          id="profile-header"
+          className="relative self-stretch"
         >
-          {data.avatarUrl ? (
-            <>
-              {/* Base hero image */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={data.avatarUrl}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover object-top"
+          <div className="relative z-[1] flex flex-col items-center">
+            <div
+              id="profile-picture"
+              className="relative z-[-1] w-full overflow-hidden rounded-t-2xl"
+              style={{
+                height:
+                  variant === "public"
+                    ? "calc(min(100vw, 480px) - 80px)"
+                    : HERO_HEIGHT[variant],
+                minHeight: variant === "public" ? "260px" : undefined,
+                maxHeight: variant === "public" ? "420px" : undefined,
+              }}
+            >
+              <div
+                className="absolute inset-0"
                 style={{
-                  WebkitMaskImage:
-                    "linear-gradient(to bottom, #000 0%, #000 60%, rgba(0,0,0,0.9) 76%, rgba(0,0,0,0.45) 88%, transparent 100%)",
-                  maskImage:
-                    "linear-gradient(to bottom, #000 0%, #000 60%, rgba(0,0,0,0.9) 76%, rgba(0,0,0,0.45) 88%, transparent 100%)",
+                  backgroundColor: theme.backgroundColor,
+                  WebkitMaskImage: HERO_RADIAL_MASK,
+                  maskImage: HERO_RADIAL_MASK,
                   WebkitMaskRepeat: "no-repeat",
                   maskRepeat: "no-repeat",
                   WebkitMaskSize: "100% 100%",
                   maskSize: "100% 100%",
                 }}
-              />
-              {/* Soft bottom vignette for readability and seamless transition */}
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: `linear-gradient(
-                    180deg,
-                    rgba(0,0,0,0) 0%,
-                    rgba(0,0,0,0.08) 50%,
-                    rgba(0,0,0,0.22) 72%,
-                    rgba(0,0,0,0.42) 88%,
-                    rgba(0,0,0,0.58) 100%
-                  )`,
-                }}
-              />
-              {/* Feather haze right at the seam */}
-              <div
-                className="absolute pointer-events-none"
-                style={{
-                  left: "-6%",
-                  right: "-6%",
-                  bottom: "-18px",
-                  height: variant === "public" ? "98px" : variant === "full" ? "78px" : "60px",
-                  background:
-                    "linear-gradient(180deg, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.14) 42%, rgba(0,0,0,0) 100%)",
-                  filter: "blur(20px)",
-                  opacity: 0.72,
-                }}
-              />
-            </>
-          ) : (
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `linear-gradient(135deg, ${theme.accentColor}55, ${theme.accentColor}22)`,
-              }}
-            />
-          )}
-          {/* Premium divider between hero and next section */}
-          <div
-            className="absolute left-0 right-0 bottom-0 pointer-events-none"
-            style={{
-              height: "1px",
-              background: `linear-gradient(to right, transparent, ${dividerColor}, transparent)`,
-              boxShadow: `0 0 10px ${dividerColor}`,
-              opacity: 0.62,
-            }}
-          />
+              >
+                {data.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={data.avatarUrl}
+                    alt=""
+                    role="presentation"
+                    className="absolute inset-0 w-full h-full object-cover object-top"
+                  />
+                ) : (
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: `linear-gradient(135deg, ${theme.accentColor}55, ${theme.accentColor}22)`,
+                    }}
+                  />
+                )}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      `linear-gradient(
+                        180deg,
+                        rgba(0,0,0,0) 24%,
+                        rgba(0,0,0,0.12) 50%,
+                        ${theme.backgroundColor}55 68%,
+                        ${theme.backgroundColor}d6 86%,
+                        ${theme.backgroundColor} 100%
+                      )`,
+                  }}
+                />
+                <div
+                  className="absolute left-[-8%] right-[-8%] bottom-[-20%] pointer-events-none"
+                  style={{
+                    height: variant === "public" ? "52%" : "44%",
+                    background: `radial-gradient(120% 88% at 50% 0%, ${theme.backgroundColor}00 0%, ${theme.backgroundColor}85 52%, ${theme.backgroundColor}e8 74%, ${theme.backgroundColor} 100%)`,
+                    filter: "blur(18px)",
+                    opacity: 0.98,
+                  }}
+                />
+                <div
+                  className="absolute left-0 right-0 bottom-0 pointer-events-none"
+                  style={{
+                    height: variant === "public" ? "22%" : "18%",
+                    background: `linear-gradient(180deg, ${theme.backgroundColor}00 0%, ${theme.backgroundColor}f2 65%, ${theme.backgroundColor} 100%)`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -496,197 +511,210 @@ export function BioPageRenderer({
         </Wrap>
       )}
 
-      {/* ── Display Name ── */}
-      <Wrap
-        {...(isPublic ? fadeUp : {})}
-        className="text-center font-bold"
+      <div
+        className="w-full flex flex-col items-center relative z-[2]"
         style={{
-          fontSize: nameSize,
-          marginTop: isHero
-            ? (variant === "phone" ? "-4px" : "-2px")
-            : (variant === "phone" ? "6px" : "12px"),
-          color: theme.textColor,
-          lineHeight: 1.3,
+          marginTop: isHero ? heroContentOffset : undefined,
+          paddingTop: isHero ? (variant === "phone" ? "6px" : "10px") : undefined,
         }}
       >
-        {data.displayName}
-      </Wrap>
-
-      {/* ── Username ── */}
-      {(theme.showUsername ?? true) && (
+        {/* ── Display Name ── */}
         <Wrap
           {...(isPublic ? fadeUp : {})}
-          className="text-center font-mono opacity-60"
+          className="text-center font-bold"
           style={{
-            fontSize: sizes.usernameSize,
-            marginTop: "2px",
+            fontSize: nameSize,
+            marginTop: isHero
+              ? (variant === "phone" ? "2px" : "4px")
+              : (variant === "phone" ? "6px" : "12px"),
             color: theme.textColor,
+            lineHeight: 1.3,
+            textShadow: heroTextShadow,
           }}
         >
-          @{data.slug}
+          {data.displayName}
         </Wrap>
-      )}
 
-      {/* ── Bio text ── */}
-      {data.bio && (
-        <Wrap
-          {...(isPublic ? fadeUp : {})}
-          className="text-center leading-relaxed mx-auto"
-          style={{
-            fontSize: sizes.bioSize,
-            maxWidth: sizes.bioMaxWidth,
-            marginTop: variant === "phone" ? "4px" : "8px",
-            color: theme.textColor,
-            opacity: 0.7,
-            padding: `0 ${sizes.px}`,
-          }}
-        >
-          {data.bio}
-        </Wrap>
-      )}
-
-      {/* ── Social links ── */}
-      {data.socialLinks.length > 0 && (
-        <Wrap
-          {...(isPublic ? fadeUp : {})}
-          className="flex justify-center flex-wrap"
-          style={{
-            gap: sizes.socialGap,
-            marginTop: variant === "phone" ? "8px" : "14px",
-          }}
-        >
-          {data.socialLinks.map((s) => {
-            const plat = findPlatform(s.platform);
-            const iconSize = parseInt(sizes.socialSize) * 0.5;
-            return (
-              <a
-                key={s.platform}
-                href={isPublic ? s.url : undefined}
-                target={isPublic ? "_blank" : undefined}
-                rel="noopener noreferrer"
-                className="rounded-full flex items-center justify-center font-bold transition-transform hover:scale-105 overflow-hidden"
-                style={{
-                  width: sizes.socialSize,
-                  height: sizes.socialSize,
-                  fontSize: sizes.socialFont,
-                  background: theme.buttonColor,
-                  color: theme.buttonTextColor,
-                  border: "1px solid rgba(0,0,0,0.06)",
-                }}
-              >
-                {plat ? (
-                  <Image src={plat.svgPath} alt={plat.name} width={iconSize} height={iconSize} />
-                ) : (
-                  socialLabel(s.platform)
-                )}
-              </a>
-            );
-          })}
-        </Wrap>
-      )}
-
-      {/* ── Links ── */}
-      <Wrap
-        {...stagger}
-        className="w-full flex flex-col mx-auto"
-        style={{
-          gap: sizes.linkGap,
-          marginTop: variant === "phone" ? "10px" : "18px",
-          padding: `0 ${sizes.px}`,
-          maxWidth: sizes.linkMax,
-        }}
-      >
-        {visibleLinks.map((link) => (
-          <LinkCard
-            key={link.id}
-            link={link}
-            theme={theme}
-            btnStyle={btnStyle}
-            sizes={sizes}
-            linkSize={linkSize}
-            variant={variant}
-            isPublic={isPublic}
-            fadeUp={fadeUp}
-            LinkWrap={LinkWrap}
-            username={data.slug}
-            bioId={(data as any).id}
-          />
-        ))}
-
-        {visibleLinks.length === 0 && (
-          <p
-            className="text-center py-6 opacity-40"
-            style={{ fontSize: linkSize.font, color: theme.textColor }}
-          >
-            No links yet.
-          </p>
-        )}
-      </Wrap>
-
-      {/* ── Footer ── */}
-      {(theme.showBranding || theme.showJoinCta) && (
-        <div
-          className="flex flex-col items-center gap-3 w-full"
-          style={{
-            marginTop: variant === "phone" ? "20px" : "32px",
-            marginBottom: variant === "phone" ? "8px" : isPublic ? "0px" : "24px",
-            padding: `0 ${sizes.px}`,
-          }}
-        >
-          {/* Divider */}
-          <div
-            className="w-full"
+        {/* ── Username ── */}
+        {(theme.showUsername ?? true) && (
+          <Wrap
+            {...(isPublic ? fadeUp : {})}
+            className="text-center font-mono opacity-60"
             style={{
-              maxWidth: sizes.linkMax,
-              height: "1px",
-              background: theme.textColor + "12",
-              marginBottom: variant === "phone" ? "4px" : "8px",
+              fontSize: sizes.usernameSize,
+              marginTop: "2px",
+              color: theme.textColor,
+              textShadow: heroTextShadow,
             }}
-          />
+          >
+            @{data.slug}
+          </Wrap>
+        )}
 
-          {theme.showJoinCta && (
-            <a
-              href={isPublic ? "/signup" : undefined}
-              className="w-full transition-all hover:opacity-90"
+        {/* ── Bio text ── */}
+        {data.bio && (
+          <Wrap
+            {...(isPublic ? fadeUp : {})}
+            className="text-center leading-relaxed mx-auto"
+            style={{
+              fontSize: sizes.bioSize,
+              maxWidth: sizes.bioMaxWidth,
+              marginTop: variant === "phone" ? "4px" : "8px",
+              color: theme.textColor,
+              opacity: 0.8,
+              padding: `0 ${sizes.px}`,
+              textShadow: heroTextShadow,
+            }}
+          >
+            {data.bio}
+          </Wrap>
+        )}
+
+        {/* ── Social links ── */}
+        {data.socialLinks.length > 0 && (
+          <Wrap
+            {...(isPublic ? fadeUp : {})}
+            className="flex justify-center flex-wrap"
+            style={{
+              gap: sizes.socialGap,
+              marginTop: variant === "phone" ? "8px" : "14px",
+            }}
+          >
+            {data.socialLinks.map((s) => {
+              const plat = findPlatform(s.platform);
+              const iconSize = parseInt(sizes.socialSize) * 0.5;
+              return (
+                <a
+                  key={s.platform}
+                  href={isPublic ? s.url : undefined}
+                  target={isPublic ? "_blank" : undefined}
+                  rel="noopener noreferrer"
+                  className="rounded-full flex items-center justify-center font-bold transition-transform hover:scale-105 overflow-hidden"
+                  style={{
+                    width: sizes.socialSize,
+                    height: sizes.socialSize,
+                    fontSize: sizes.socialFont,
+                    background: theme.buttonColor,
+                    color: theme.buttonTextColor,
+                    border: "1px solid rgba(0,0,0,0.06)",
+                  }}
+                >
+                  {plat ? (
+                    <Image src={plat.svgPath} alt={plat.name} width={iconSize} height={iconSize} />
+                  ) : (
+                    socialLabel(s.platform)
+                  )}
+                </a>
+              );
+            })}
+          </Wrap>
+        )}
+
+        {/* ── Links ── */}
+        <Wrap
+          {...stagger}
+          className="w-full flex flex-col mx-auto"
+          style={{
+            gap: sizes.linkGap,
+            marginTop: isHero
+              ? (variant === "phone" ? "8px" : "10px")
+              : (variant === "phone" ? "10px" : "18px"),
+            padding: `0 ${sizes.px}`,
+            maxWidth: sizes.linkMax,
+          }}
+        >
+          {visibleLinks.map((link) => (
+            <LinkCard
+              key={link.id}
+              link={link}
+              theme={theme}
+              btnStyle={btnStyle}
+              sizes={sizes}
+              linkSize={linkSize}
+              variant={variant}
+              isPublic={isPublic}
+              fadeUp={fadeUp}
+              LinkWrap={LinkWrap}
+              username={data.slug}
+              bioId={(data as any).id}
+            />
+          ))}
+
+          {visibleLinks.length === 0 && (
+            <p
+              className="text-center py-6 opacity-40"
+              style={{ fontSize: linkSize.font, color: theme.textColor }}
+            >
+              No links yet.
+            </p>
+          )}
+        </Wrap>
+
+        {/* ── Footer ── */}
+        {(theme.showBranding || theme.showJoinCta) && (
+          <div
+            className="flex flex-col items-center gap-3 w-full"
+            style={{
+              marginTop: variant === "phone" ? "20px" : "32px",
+              marginBottom: variant === "phone" ? "8px" : isPublic ? "0px" : "24px",
+              padding: `0 ${sizes.px}`,
+            }}
+          >
+            {/* Divider */}
+            <div
+              className="w-full"
               style={{
                 maxWidth: sizes.linkMax,
-                textDecoration: "none",
-                display: "block",
+                height: "1px",
+                background: theme.textColor + "12",
+                marginBottom: variant === "phone" ? "4px" : "8px",
               }}
-            >
-              <div
-                className="w-full rounded-full flex items-center justify-center font-semibold"
+            />
+
+            {theme.showJoinCta && (
+              <a
+                href={isPublic ? "/signup" : undefined}
+                className="w-full transition-all hover:opacity-90"
                 style={{
-                  padding: `${variant === "phone" ? "8px" : "12px"} ${linkSize.px}`,
-                  fontSize: linkSize.font,
-                  background: theme.textColor + "0a",
-                  color: theme.textColor,
-                  border: `1px solid ${theme.textColor}15`,
+                  maxWidth: sizes.linkMax,
+                  textDecoration: "none",
+                  display: "block",
                 }}
               >
-                Join {data.displayName} on tap-d.link
-              </div>
-            </a>
-          )}
+                <div
+                  className="w-full rounded-full flex items-center justify-center font-semibold"
+                  style={{
+                    padding: `${variant === "phone" ? "8px" : "12px"} ${linkSize.px}`,
+                    fontSize: linkSize.font,
+                    background: theme.textColor + "0a",
+                    color: theme.textColor,
+                    border: `1px solid ${theme.textColor}15`,
+                  }}
+                >
+                  Join {data.displayName} on tap-d.link
+                </div>
+              </a>
+            )}
 
-          {theme.showBranding && (
-            <a
-              href={isPublic ? "/" : undefined}
-              className="flex items-center justify-center gap-1.5 opacity-70 hover:opacity-55 transition-opacity"
-              style={{
-                fontSize: sizes.brandingFont,
-                color: theme.textColor,
-                textDecoration: "none",
-                marginTop: theme.showJoinCta ? "0px" : "4px",
-              }}
-            >
-              <span className="font-medium">
-                <img src="/logo/logo-full-dark-text.svg" width={variant === "phone" ? "80px" : "100px"} height={variant === "phone" ? "20px" : "40px"} alt="" />
-              </span>
-            </a>
-          )}
-        </div>
-      )}
+            {theme.showBranding && (
+              <a
+                href={isPublic ? "/" : undefined}
+                className="flex items-center justify-center gap-1.5 opacity-70 hover:opacity-55 transition-opacity"
+                style={{
+                  fontSize: sizes.brandingFont,
+                  color: theme.textColor,
+                  textDecoration: "none",
+                  marginTop: theme.showJoinCta ? "0px" : "4px",
+                }}
+              >
+                <span className="font-medium">
+                  <img src="/logo/logo-full-dark-text.svg" width={variant === "phone" ? "80px" : "100px"} height={variant === "phone" ? "20px" : "40px"} alt="" />
+                </span>
+              </a>
+            )}
+          </div>
+        )}
+      </div>
       <span className="mt-5"/>
     </div>
   );
@@ -900,6 +928,9 @@ function LinkCard({
     : undefined;
 
   const isFeatured = link.layout === "featured";
+  const verticalPadding = parseFloat(linkSize.py) || 0;
+  const leftVisualSize = variant === "phone" ? 24 : 36;
+  const classicMinHeight = `${Math.round(leftVisualSize + verticalPadding * 2)}px`;
   const featuredImg = link.thumbnailUrl || (() => {
     const plat = findPlatform(link.title) ?? findPlatform(link.icon ?? "");
     return plat?.svgPath ?? null;
@@ -1004,6 +1035,7 @@ function LinkCard({
         style={{
           ...btnStyle,
           padding: `${linkSize.py} ${linkSize.px}`,
+          minHeight: classicMinHeight,
           fontSize: linkSize.font,
           fontWeight: 600,
           textDecoration: "none",

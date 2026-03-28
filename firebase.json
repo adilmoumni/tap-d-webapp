@@ -25,6 +25,14 @@
         "destination": "/d/links/placeholder.html"
       },
       {
+        "source": "/d/biopages/**/edit",
+        "destination": "/d/biopages/placeholder/edit.html"
+      },
+      {
+        "source": "/dashboard/biopages/**/edit",
+        "destination": "/d/biopages/placeholder/edit.html"
+      },
+      {
         "source": "**",
         "destination": "/placeholder.html"
       }

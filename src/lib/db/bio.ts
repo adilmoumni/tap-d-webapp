@@ -18,8 +18,11 @@ import {
   serverTimestamp,
   where,
   limit,
+  startAfter,
   runTransaction,
   deleteField,
+  type QueryDocumentSnapshot,
+  type DocumentData,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { BioPageData, BioLink, BioSocialLink, BioTheme, BioPendingTransfer } from "@/types/bio";
@@ -39,6 +42,14 @@ export type UserBiopageRecord = {
   ownerId?: string;
   createdAt?: unknown;
 } & Record<string, unknown>;
+
+export type UserBiopagesPageCursor = QueryDocumentSnapshot<DocumentData> | null;
+
+export type UserBiopagesPageResult = {
+  pages: UserBiopageRecord[];
+  nextCursor: UserBiopagesPageCursor;
+  hasMore: boolean;
+};
 
 function asMillis(value: unknown): number {
   if (!value) return 0;
@@ -113,6 +124,57 @@ export async function getUserBiopages(uid: string): Promise<UserBiopageRecord[]>
 
   pages.sort((a, b) => asMillis(b.createdAt) - asMillis(a.createdAt));
   return pages;
+}
+
+export async function getUserBiopagesPage(
+  uid: string,
+  options: {
+    pageSize?: number;
+    cursor?: UserBiopagesPageCursor;
+  } = {}
+): Promise<UserBiopagesPageResult> {
+  const pageSize = Math.max(1, Math.min(options.pageSize ?? 12, 50));
+  const cursor = options.cursor ?? null;
+
+  const ownerBase = [
+    where("ownerId", "==", uid),
+    orderBy("createdAt", "desc"),
+  ];
+  const ownerQuery = cursor
+    ? query(collection(db, "biopages"), ...ownerBase, startAfter(cursor), limit(pageSize + 1))
+    : query(collection(db, "biopages"), ...ownerBase, limit(pageSize + 1));
+
+  const snap = await getDocs(ownerQuery);
+
+  // Backward compatibility: first page may still rely on legacy uid docs.
+  if (snap.empty && !cursor) {
+    const legacyAll = await getUserBiopages(uid);
+    const sliced = legacyAll.slice(0, pageSize);
+    return {
+      pages: sliced,
+      hasMore: legacyAll.length > pageSize,
+      nextCursor: null,
+    };
+  }
+
+  const hasMore = snap.docs.length > pageSize;
+  const docs = hasMore ? snap.docs.slice(0, pageSize) : snap.docs;
+
+  const pages = docs.map((d) => {
+    const data = d.data() as Record<string, unknown>;
+    const slug = typeof data.slug === "string" ? data.slug : "";
+    return {
+      ...data,
+      id: d.id,
+      username: slug || d.id,
+    } as UserBiopageRecord;
+  });
+
+  return {
+    pages,
+    hasMore,
+    nextCursor: hasMore ? docs[docs.length - 1] ?? null : null,
+  };
 }
 
 export async function isBioUsernameAvailable(username: string): Promise<boolean> {

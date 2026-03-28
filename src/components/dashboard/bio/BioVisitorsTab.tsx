@@ -128,13 +128,20 @@ export function BioVisitorsTab() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!bioId) return;
+    if (!bioId) {
+      setStats([]);
+      setVisitors([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+    const currentBioId = bioId;
     async function loadVisitorData() {
       setLoading(true);
       try {
         const [s, v] = await Promise.all([
-          getBioDailyStats(bioId, 30),
-          getRecentBioVisitors(bioId, 50),
+          getBioDailyStats(currentBioId, 30),
+          getRecentBioVisitors(currentBioId, 50),
         ]);
         setStats(s);
         setVisitors(v);

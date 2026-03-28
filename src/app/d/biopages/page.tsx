@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, UserRound } from "lucide-react";
+import { Loader2, Plus, UserRound } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   acceptBioPageTransfer,
@@ -11,11 +11,12 @@ import {
   deleteBioPageById,
   getBioPageTotalViews,
   getPendingTransfersForRecipient,
-  getUserBiopages,
+  getUserBiopagesPage,
   requestBioPageTransfer,
   setUserActiveBio,
   type PendingBioTransferRecord,
   type UserBiopageRecord,
+  type UserBiopagesPageCursor,
 } from "@/lib/db/bio";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -28,6 +29,8 @@ import { DeleteBioPageModal } from "@/components/dashboard/biopages/DeleteBioPag
 import { CreateBioPageModal } from "@/components/dashboard/biopages/CreateBioPageModal";
 import { TransferBioPageModal } from "@/components/dashboard/biopages/TransferBioPageModal";
 import { PendingTransferReviewModal } from "@/components/dashboard/biopages/PendingTransferReviewModal";
+
+const BIO_PAGES_PAGE_SIZE = 12;
 
 function transferMeta(page: UserBiopageRecord): {
   hasPendingTransfer: boolean;
@@ -71,9 +74,13 @@ export default function BioPagesListPage() {
   const [pendingTransfers, setPendingTransfers] = useState<PendingBioTransferRecord[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<UserBiopagesPageCursor>(null);
+  const [hasMorePages, setHasMorePages] = useState(false);
 
   const [statsPage, setStatsPage] = useState<BioPageCardData | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [deletePage, setDeletePage] = useState<BioPageCardData | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -95,59 +102,88 @@ export default function BioPagesListPage() {
   }, [profile?.email, user?.email]);
 
   const fetchDashboardData = useCallback(
-    async (showLoading = true) => {
+    async (showLoading = true, mode: "reset" | "append" = "reset") => {
       if (!user) {
         setPages([]);
         setPendingTransfers([]);
         setError(null);
+        setHasMorePages(false);
+        setNextCursor(null);
+        setLoadingMore(false);
         setLoading(false);
         return;
       }
 
-      if (showLoading) {
+      if (mode === "append" && !nextCursor) {
+        setHasMorePages(false);
+        return;
+      }
+
+      if (mode === "append") {
+        setLoadingMore(true);
+      } else if (showLoading) {
         setLoading(true);
       }
       setError(null);
 
       try {
-        const pendingTransfersPromise = accountEmail
-          ? getPendingTransfersForRecipient(accountEmail)
-          : Promise.resolve<PendingBioTransferRecord[]>([]);
+        const pagePromise = getUserBiopagesPage(user.uid, {
+          pageSize: BIO_PAGES_PAGE_SIZE,
+          cursor: mode === "append" ? nextCursor : null,
+        });
+        const pendingTransfersPromise =
+          mode === "reset"
+            ? accountEmail
+              ? getPendingTransfersForRecipient(accountEmail)
+              : Promise.resolve<PendingBioTransferRecord[]>([])
+            : Promise.resolve<PendingBioTransferRecord[] | null>(null);
 
-        const [userPages, incomingTransfers] = await Promise.all([
-          getUserBiopages(user.uid),
+        const [pageResult, incomingTransfers] = await Promise.all([
+          pagePromise,
           pendingTransfersPromise,
         ]);
 
-        const cards = await Promise.all(
-          userPages.map(async (page) => {
-            const fallbackViews = typeof page.totalViews === "number" ? page.totalViews : 0;
-            let totalViews = fallbackViews;
-            try {
-              totalViews = await getBioPageTotalViews(page.id, fallbackViews);
-            } catch {
-              totalViews = fallbackViews;
-            }
-            return toCardData(page, totalViews);
-          })
+        const cards = pageResult.pages.map((page) =>
+          toCardData(page, typeof page.totalViews === "number" ? page.totalViews : 0)
         );
 
-        setPages(cards);
-        setPendingTransfers(incomingTransfers);
+        if (mode === "append") {
+          setPages((prev) => {
+            const seen = new Set(prev.map((item) => item.id));
+            const merged = [...prev];
+            for (const card of cards) {
+              if (!seen.has(card.id)) {
+                merged.push(card);
+              }
+            }
+            return merged;
+          });
+        } else {
+          setPages(cards);
+        }
+
+        setHasMorePages(pageResult.hasMore);
+        setNextCursor(pageResult.nextCursor);
+
+        if (incomingTransfers) {
+          setPendingTransfers(incomingTransfers);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load bio pages");
       } finally {
-        if (showLoading) {
+        if (mode === "append") {
+          setLoadingMore(false);
+        } else if (showLoading) {
           setLoading(false);
         }
       }
     },
-    [accountEmail, user]
+    [accountEmail, nextCursor, user]
   );
 
   useEffect(() => {
     if (authLoading) return;
-    void fetchDashboardData(true);
+    void fetchDashboardData(true, "reset");
   }, [authLoading, fetchDashboardData]);
 
   const activePendingTransfer = useMemo(() => {
@@ -375,6 +411,35 @@ export default function BioPagesListPage() {
     }
   };
 
+  const handleViewStats = async (page: BioPageCardData) => {
+    setStatsPage(page);
+    setStatsLoading(true);
+
+    try {
+      const totalViews = await getBioPageTotalViews(page.id, page.totalViews);
+
+      setStatsPage((current) =>
+        current && current.id === page.id
+          ? { ...current, totalViews }
+          : current
+      );
+      setPages((current) =>
+        current.map((item) =>
+          item.id === page.id ? { ...item, totalViews } : item
+        )
+      );
+    } catch {
+      // Keep the card fallback value when stats read fails.
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  const handleLoadMorePages = async () => {
+    if (loadingMore || !hasMorePages) return;
+    await fetchDashboardData(false, "append");
+  };
+
   const header = (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
@@ -521,7 +586,7 @@ export default function BioPagesListPage() {
               <BioPageCard
                 key={page.id}
                 page={page}
-                onViewStats={setStatsPage}
+                onViewStats={handleViewStats}
                 onDelete={setDeletePage}
                 onTransfer={handleOpenTransfer}
                 onCancelTransfer={handleCancelTransfer}
@@ -545,6 +610,27 @@ export default function BioPagesListPage() {
             )}
           </div>
         )}
+
+        {pages.length > 0 && hasMorePages && (
+          <div className="flex justify-center">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="rounded-xl"
+              disabled={loadingMore}
+              onClick={() => void handleLoadMorePages()}
+            >
+              {loadingMore ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Loading more
+                </>
+              ) : (
+                "Load more"
+              )}
+            </Button>
+          </div>
+        )}
       </div>
 
       <Modal
@@ -557,7 +643,11 @@ export default function BioPagesListPage() {
         <div className="space-y-2">
           <p className="text-sm text-[#8a8a9a]">Total visitors recorded</p>
           <p className="text-3xl font-semibold text-[#1a1a2e]">
-            {statsPage ? statsPage.totalViews.toLocaleString() : "0"}
+            {statsLoading
+              ? "Loading..."
+              : statsPage
+                ? statsPage.totalViews.toLocaleString()
+                : "0"}
           </p>
         </div>
       </Modal>
